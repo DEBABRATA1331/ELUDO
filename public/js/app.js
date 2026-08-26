@@ -1,6 +1,6 @@
 /**
  * LUDO REAL-TIME FRONTEND APPLICATION SCRIPT
- * Manages Socket.io events, DOM Board Rendering, 3D Dice Animations & UI Interaction
+ * Manages Socket.io events, DOM Board Rendering, 3D Dice Animations & Smooth Step Movements
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let myColor = null;
   let currentRoomState = null;
   let isMuted = false;
+  let animatingTokens = {}; // Track ongoing smooth step animations
 
   // DOM Elements
   const ludoBoard = document.getElementById('ludoBoard');
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
   buildBoardGrid();
 
   // ==========================================================================
-  // BOARD GRID GENERATION
+  // BOARD GRID GENERATION (REALISTIC)
   // ==========================================================================
 
   function buildBoardGrid() {
@@ -82,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create 15x15 Cells
     for (let r = 0; r < 15; r++) {
       for (let c = 0; c < 15; c++) {
-        // Handle 6x6 Bases
         if (r < 6 && c < 6 && r === 0 && c === 0) {
           createBaseYard('red', 0, 0);
         } else if (r < 6 && c > 8 && r === 0 && c === 9) {
@@ -92,13 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (r > 8 && c < 6 && r === 9 && c === 0) {
           createBaseYard('blue', 9, 0);
         } else if (r >= 6 && r <= 8 && c >= 6 && c <= 8) {
-          // Center 3x3 Home Triangle Area
           if (r === 6 && c === 6) createCenterHome();
         } else if ((r < 6 && c < 6) || (r < 6 && c > 8) || (r > 8 && c > 8) || (r > 8 && c < 6)) {
-          // Inside 6x6 Base area (handled by base yard span)
           continue;
         } else {
-          // Regular Path Tile
           createPathCell(r, c);
         }
       }
@@ -147,45 +144,55 @@ document.addEventListener('DOMContentLoaded', () => {
     cell.style.gridRow = `${r + 1}`;
     cell.style.gridColumn = `${c + 1}`;
 
-    // Color path classes & safe spot markers
+    // Color paths & safe spot markers with crisp SVG icons
     if (r === 6 && c >= 1 && c <= 5) cell.classList.add('path-red');
     if (r === 7 && c >= 1 && c <= 5) cell.classList.add('home-red');
-    if (r === 6 && c === 1) cell.classList.add('start-red', 'safe-star');
+    if (r === 6 && c === 1) addStarIcon(cell, 'start-red');
 
     if (c === 8 && r >= 1 && r <= 5) cell.classList.add('path-green');
     if (c === 7 && r >= 1 && r <= 5) cell.classList.add('home-green');
-    if (r === 1 && c === 8) cell.classList.add('start-green', 'safe-star');
+    if (r === 1 && c === 8) addStarIcon(cell, 'start-green');
 
     if (r === 8 && c >= 9 && c <= 13) cell.classList.add('path-yellow');
     if (r === 7 && c >= 9 && c <= 13) cell.classList.add('home-yellow');
-    if (r === 8 && c === 13) cell.classList.add('start-yellow', 'safe-star');
+    if (r === 8 && c === 13) addStarIcon(cell, 'start-yellow');
 
     if (c === 6 && r >= 9 && r <= 13) cell.classList.add('path-blue');
     if (c === 7 && r >= 9 && r <= 13) cell.classList.add('home-blue');
-    if (r === 13 && c === 6) cell.classList.add('start-blue', 'safe-star');
+    if (r === 13 && c === 6) addStarIcon(cell, 'start-blue');
 
-    // Additional Star Safe Spots
+    // Star Safe Spots
     if ((r === 2 && c === 6) || (r === 6 && c === 12) || (r === 12 && c === 8) || (r === 8 && c === 2)) {
-      cell.classList.add('safe-star');
+      addStarIcon(cell);
     }
 
     ludoBoard.appendChild(cell);
   }
 
+  function addStarIcon(cell, extraClass = '') {
+    cell.classList.add('safe-star');
+    if (extraClass) cell.classList.add(extraClass);
+    const starSvg = document.createElement('div');
+    starSvg.className = 'star-svg-icon';
+    starSvg.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="#fbbf24" stroke="#d97706" stroke-width="1">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    `;
+    cell.appendChild(starSvg);
+  }
+
   // ==========================================================================
-  // RENDER BOARD STATE & TOKENS
+  // RENDER BOARD STATE & TOKENS WITH SMOOTH STEP ANIMATIONS
   // ==========================================================================
 
   function renderBoard(roomState) {
-    // Clear all existing tokens from board
     document.querySelectorAll('.token').forEach(el => el.remove());
 
     if (!roomState || !roomState.boardState) return;
 
     const currentPlayer = roomState.players[roomState.currentTurnIndex];
     const isMyTurn = (currentPlayer && currentPlayer.color === myColor && roomState.gameStarted);
-
-    // Map cells to tokens for stacking multiple tokens on same tile
     const cellTokenMap = {};
 
     Object.keys(roomState.boardState).forEach(color => {
@@ -205,9 +212,11 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenEl.className = `token ${color}`;
         tokenEl.dataset.color = color;
         tokenEl.dataset.index = tokenIndex;
-        tokenEl.innerText = tokenIndex + 1;
 
-        // Check if move is valid for this token
+        // Shiny inner dot design
+        tokenEl.innerHTML = `<span class="token-num">${tokenIndex + 1}</span>`;
+
+        // Check valid moves highlight
         if (isMyTurn && roomState.hasRolled && roomState.diceValue) {
           const validMoves = calculateValidMoves(roomState, myColor, roomState.diceValue);
           if (validMoves.includes(tokenIndex)) {
@@ -226,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Append tokens to DOM & handle stacking styling
+    // Append tokens & apply stack spacing
     Object.keys(cellTokenMap).forEach(cellId => {
       const container = document.getElementById(cellId);
       if (!container) return;
@@ -254,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // RENDER UI PANELS & CONTROLS
+  // RENDER UI PANELS & HOME COLOR PICKER
   // ==========================================================================
 
   function updateUI(roomState) {
@@ -278,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       turnBanner.className = `turn-banner color-${currentPlayer.color}`;
       const isMyTurn = (currentPlayer.color === myColor);
-      turnText.innerText = isMyTurn ? `🎯 YOUR TURN (${currentPlayer.color.toUpperCase()})` : `⏳ ${currentPlayer.name}'s Turn (${currentPlayer.color.toUpperCase()})`;
+      turnText.innerText = isMyTurn ? `YOUR TURN (${currentPlayer.color.toUpperCase()})` : `${currentPlayer.name}'s Turn (${currentPlayer.color.toUpperCase()})`;
 
       rollDiceBtn.disabled = !(isMyTurn && !roomState.hasRolled);
     }
@@ -291,20 +300,16 @@ document.addEventListener('DOMContentLoaded', () => {
       diceValueDisplay.innerText = '-';
     }
 
-    // Webhook Feed Status
+    // Webhook Target
     if (roomState.webhookUrl) {
       webhookTargetUrl.innerText = `Webhook Target: ${roomState.webhookUrl}`;
     } else {
       webhookTargetUrl.innerText = 'Webhook Target: Not Configured';
     }
 
-    // Render Logs & Chat
     renderLogs(roomState.logs);
-
-    // Render Board Tokens
     renderBoard(roomState);
 
-    // Check Victory
     if (roomState.winners && roomState.winners.length > 0) {
       showVictoryModal(roomState);
     }
@@ -313,36 +318,58 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPlayersList(roomState) {
     playersList.innerHTML = '';
 
+    const isHost = roomState.players.find(p => p.socketId === socket.id)?.isHost;
+    const me = roomState.players.find(p => p.socketId === socket.id);
+
     roomState.players.forEach(p => {
       const card = document.createElement('div');
       const isTurn = roomState.gameStarted && roomState.players[roomState.currentTurnIndex]?.color === p.color;
       card.className = `player-card ${isTurn ? 'active-turn' : ''}`;
 
       const homeTokens = roomState.boardState[p.color] ? roomState.boardState[p.color].filter(s => s === 57).length : 0;
+      const isMe = (p.socketId === socket.id);
 
       card.innerHTML = `
         <div class="player-info">
-          <span class="color-dot ${p.color}"></span>
-          <span class="player-name">${p.name} ${p.color === myColor ? '(You)' : ''}</span>
+          <span class="color-dot ${p.color}" title="Home Base: ${p.color.toUpperCase()}"></span>
+          <span class="player-name">${p.name} ${isMe ? '(You)' : ''}</span>
           <div class="player-tags">
             ${p.isHost ? '<span class="tag tag-host">HOST</span>' : ''}
             ${p.isBot ? '<span class="tag tag-bot">BOT</span>' : ''}
           </div>
         </div>
         <div class="player-progress">
-          🏠 ${homeTokens}/4 Home
+          ${!roomState.gameStarted && isMe ? `
+            <select class="color-select-dropdown" data-player="${p.socketId}">
+              <option value="red" ${p.color === 'red' ? 'selected' : ''}>Red Base</option>
+              <option value="green" ${p.color === 'green' ? 'selected' : ''}>Green Base</option>
+              <option value="yellow" ${p.color === 'yellow' ? 'selected' : ''}>Yellow Base</option>
+              <option value="blue" ${p.color === 'blue' ? 'selected' : ''}>Blue Base</option>
+            </select>
+          ` : `<span>🏠 ${homeTokens}/4 Home</span>`}
         </div>
       `;
+
+      // Home Color Switch Listener
+      const colorSelect = card.querySelector('.color-select-dropdown');
+      if (colorSelect) {
+        colorSelect.addEventListener('change', (e) => {
+          SoundFX.playClick();
+          const selectedColor = e.target.value;
+          myColor = selectedColor;
+          socket.emit('select_color', { roomCode: myRoomCode, color: selectedColor });
+        });
+      }
+
       playersList.appendChild(card);
     });
 
     // Add open slots
     if (roomState.players.length < 4 && !roomState.gameStarted) {
-      const isHost = roomState.players.find(p => p.socketId === socket.id)?.isHost;
       if (isHost) {
         const addBotBtn = document.createElement('button');
         addBotBtn.className = 'btn btn-secondary btn-block empty-slot';
-        addBotBtn.innerHTML = '🤖 + Add AI Bot';
+        addBotBtn.innerHTML = '+ Add AI Bot';
         addBotBtn.addEventListener('click', () => {
           SoundFX.playClick();
           socket.emit('add_bot', { roomCode: myRoomCode });
@@ -351,8 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Start Game Button visibility
-    const me = roomState.players.find(p => p.socketId === socket.id);
     if (me && me.isHost && !roomState.gameStarted) {
       startGameBtn.classList.remove('hidden');
     } else {
@@ -383,13 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 600);
   }
 
-  function addWebhookLog(event, data) {
-    const entry = document.createElement('div');
-    entry.className = 'log-entry code-font';
-    entry.innerHTML = `<strong>[${new Date().toLocaleTimeString()}] ${event}</strong><br>${JSON.stringify(data)}`;
-    webhookFeedContainer.prepend(entry);
-  }
-
   function showVictoryModal(roomState) {
     victoryModal.classList.remove('hidden');
     SoundFX.playWin();
@@ -405,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // EVENT LISTENERS
+  // EVENT LISTENERS & COLOR PICKER CHIPS IN LOBBY
   // ==========================================================================
 
   // Tab switching inside lobby
@@ -423,13 +441,23 @@ document.addEventListener('DOMContentLoaded', () => {
     createRoomForm.classList.remove('active');
   });
 
+  // Color chip selection in Create / Join form
+  document.querySelectorAll('.color-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const parent = chip.parentElement;
+      parent.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+
   // Create Room submit
-  createRoomForm.addEventListener('click', () => SoundFX.playClick());
   createRoomForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const playerName = document.getElementById('createPlayerName').value.trim();
     const webhookUrl = document.getElementById('createWebhookUrl').value.trim();
-    socket.emit('create_room', { playerName, webhookUrl });
+    const preferredColor = createRoomForm.querySelector('input[name="createColor"]:checked')?.value || 'red';
+
+    socket.emit('create_room', { playerName, webhookUrl, preferredColor });
   });
 
   // Join Room submit
@@ -437,13 +465,21 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const playerName = document.getElementById('joinPlayerName').value.trim();
     const roomCode = document.getElementById('joinRoomCode').value.trim().toUpperCase();
-    socket.emit('join_room', { roomCode, playerName });
+    const preferredColor = joinRoomForm.querySelector('input[name="joinColor"]:checked')?.value || 'green';
+
+    socket.emit('join_room', { roomCode, playerName, preferredColor });
   });
 
   // Roll Dice Button
   rollDiceBtn.addEventListener('click', () => {
     if (rollDiceBtn.disabled) return;
     socket.emit('roll_dice', { roomCode: myRoomCode });
+  });
+
+  diceCube.addEventListener('click', () => {
+    if (!rollDiceBtn.disabled) {
+      socket.emit('roll_dice', { roomCode: myRoomCode });
+    }
   });
 
   // Start Game Button
@@ -455,15 +491,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggle Mute
   toggleAudioBtn.addEventListener('click', () => {
     isMuted = SoundFX.toggleMute();
-    toggleAudioBtn.innerText = isMuted ? '🔇' : '🔊';
+    toggleAudioBtn.classList.toggle('muted', isMuted);
   });
 
   // Copy Invite Link
   copyInviteLinkBtn.addEventListener('click', () => {
     const inviteUrl = `${window.location.origin}?room=${myRoomCode}`;
     navigator.clipboard.writeText(inviteUrl).then(() => {
-      copyInviteLinkBtn.innerText = '✅ Copied!';
-      setTimeout(() => { copyInviteLinkBtn.innerText = '📋 Copy Link'; }, 2000);
+      copyInviteLinkBtn.querySelector('span').innerText = 'Copied!';
+      setTimeout(() => { copyInviteLinkBtn.querySelector('span').innerText = 'Copy Link'; }, 2000);
     });
   });
 
@@ -570,7 +606,6 @@ document.addEventListener('DOMContentLoaded', () => {
     myColor = playerColor;
     lobbyModal.classList.add('hidden');
     updateUI(roomState);
-    addWebhookLog('ROOM_CREATED', { roomCode, playerColor });
   });
 
   socket.on('room_joined', ({ roomCode, playerColor, roomState }) => {
@@ -578,7 +613,6 @@ document.addEventListener('DOMContentLoaded', () => {
     myColor = playerColor;
     lobbyModal.classList.add('hidden');
     updateUI(roomState);
-    addWebhookLog('ROOM_JOINED', { roomCode, playerColor });
   });
 
   socket.on('game_state_update', (roomState) => {
@@ -588,13 +622,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUI(roomState);
   });
 
-  socket.on('webhook_test_result', ({ success, statusCode, message }) => {
-    webhookTestBadge.innerText = success ? `✅ ${message || 'HTTP 200 OK'}` : `❌ Error: ${message}`;
+  socket.on('webhook_test_result', ({ success, message }) => {
+    webhookTestBadge.innerText = success ? `HTTP 200 OK` : `Error: ${message}`;
     webhookTestBadge.className = `test-result-badge ${success ? 'success' : 'error'}`;
     webhookTestBadge.classList.remove('hidden');
   });
 
-  socket.on('chat_message', ({ sender, color, text, time }) => {
+  socket.on('chat_message', ({ sender, color, text }) => {
     const msgEl = document.createElement('div');
     msgEl.className = 'chat-msg';
     msgEl.innerHTML = `<span class="sender" style="color: var(--color-${color})">${sender}:</span> <span>${text}</span>`;

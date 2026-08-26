@@ -309,25 +309,34 @@ function executeMove(room, color, tokenIndex, dice) {
   io.to(room.code).emit('game_state_update', room);
 }
 
+// Helper to find available unassigned colors
+function getAvailableColor(room) {
+  const taken = room.players.map(p => p.color);
+  return COLORS.find(c => !taken.includes(c)) || 'red';
+}
+
 // Socket.io Connection Logic
 io.on('connection', (socket) => {
   console.log(`[Socket Connected] ID: ${socket.id}`);
 
   // 1. Create Room
-  socket.on('create_room', ({ playerName, webhookUrl }) => {
+  socket.on('create_room', ({ playerName, webhookUrl, preferredColor }) => {
     const code = generateRoomCode();
     const room = createRoomState(code, playerName, webhookUrl);
+    if (preferredColor && COLORS.includes(preferredColor)) {
+      room.players[0].color = preferredColor;
+    }
     room.players[0].socketId = socket.id;
 
     rooms[code] = room;
     socket.join(code);
 
-    socket.emit('room_created', { roomCode: code, playerColor: 'red', roomState: room });
-    console.log(`[Room Created] Code: ${code}, Host: ${playerName}`);
+    socket.emit('room_created', { roomCode: code, playerColor: room.players[0].color, roomState: room });
+    console.log(`[Room Created] Code: ${code}, Host: ${playerName}, Color: ${room.players[0].color}`);
   });
 
   // 2. Join Room
-  socket.on('join_room', ({ roomCode, playerName }) => {
+  socket.on('join_room', ({ roomCode, playerName, preferredColor }) => {
     const code = roomCode.trim().toUpperCase();
     const room = rooms[code];
 
@@ -341,7 +350,10 @@ io.on('connection', (socket) => {
       return socket.emit('error_message', 'Room is full (max 4 players)!');
     }
 
-    const assignedColor = COLORS[room.players.length];
+    const assignedColor = (preferredColor && !room.players.some(p => p.color === preferredColor))
+      ? preferredColor
+      : getAvailableColor(room);
+
     const newPlayer = {
       id: socket.id,
       socketId: socket.id,
@@ -360,12 +372,34 @@ io.on('connection', (socket) => {
     io.to(code).emit('game_state_update', room);
   });
 
+  // Select / Change Color in Lobby
+  socket.on('select_color', ({ roomCode, color }) => {
+    const room = rooms[roomCode];
+    if (!room || room.gameStarted) return;
+
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (!player) return;
+
+    const isTaken = room.players.some(p => p.color === color && p.socketId !== socket.id);
+    if (isTaken) {
+      return socket.emit('error_message', 'That color/home is already picked by another player!');
+    }
+
+    const oldColor = player.color;
+    player.color = color;
+    room.logs.push(`${player.name} switched home base from ${oldColor.toUpperCase()} to ${color.toUpperCase()}`);
+    io.to(roomCode).emit('game_state_update', room);
+  });
+
   // 3. Add AI Bot
-  socket.on('add_bot', ({ roomCode }) => {
+  socket.on('add_bot', ({ roomCode, preferredColor }) => {
     const room = rooms[roomCode];
     if (!room || room.gameStarted || room.players.length >= 4) return;
 
-    const assignedColor = COLORS[room.players.length];
+    const assignedColor = (preferredColor && !room.players.some(p => p.color === preferredColor))
+      ? preferredColor
+      : getAvailableColor(room);
+
     const botNames = ['RoboRoller', 'LudoMaster AI', 'CyberPawn', 'ByteRunner'];
     const botName = botNames[room.players.length - 1] || `Bot ${room.players.length + 1}`;
 
