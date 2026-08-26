@@ -1,6 +1,6 @@
 /**
  * LUDO REAL-TIME FRONTEND APPLICATION SCRIPT
- * Manages Socket.io events, DOM Board Rendering, 3D Dice Animations & Smooth Step Movements
+ * Manages Socket.io events, DOM Board Rendering, Tap-to-Roll 3D Dice Animations & Smooth Step Movements
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let myColor = null;
   let currentRoomState = null;
   let isMuted = false;
-  let animatingTokens = {}; // Track ongoing smooth step animations
 
   // DOM Elements
   const ludoBoard = document.getElementById('ludoBoard');
@@ -59,8 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const turnBanner = document.getElementById('turnBanner');
   const turnText = document.getElementById('turnText');
   const diceCube = document.getElementById('diceCube');
-  const rollDiceBtn = document.getElementById('rollDiceBtn');
-  const diceResultText = document.getElementById('diceResultText');
+  const diceHintText = document.getElementById('diceHintText');
   const diceValueDisplay = document.getElementById('diceValueDisplay');
 
   const playerCount = document.getElementById('playerCount');
@@ -108,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildBoardGrid() {
     ludoBoard.innerHTML = '';
 
-    // Create 15x15 Cells
     for (let r = 0; r < 15; r++) {
       for (let c = 0; c < 15; c++) {
         if (r < 6 && c < 6 && r === 0 && c === 0) {
@@ -172,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
     cell.style.gridRow = `${r + 1}`;
     cell.style.gridColumn = `${c + 1}`;
 
-    // Color paths & safe spot markers with crisp SVG icons
     if (r === 6 && c >= 1 && c <= 5) cell.classList.add('path-red');
     if (r === 7 && c >= 1 && c <= 5) cell.classList.add('home-red');
     if (r === 6 && c === 1) addStarIcon(cell, 'start-red');
@@ -189,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (c === 7 && r >= 9 && r <= 13) cell.classList.add('home-blue');
     if (r === 13 && c === 6) addStarIcon(cell, 'start-blue');
 
-    // Star Safe Spots
     if ((r === 2 && c === 6) || (r === 6 && c === 12) || (r === 12 && c === 8) || (r === 8 && c === 2)) {
       addStarIcon(cell);
     }
@@ -211,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // RENDER BOARD STATE & TOKENS WITH SMOOTH STEP ANIMATIONS
+  // RENDER BOARD STATE & TOKENS
   // ==========================================================================
 
   function renderBoard(roomState) {
@@ -240,11 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenEl.className = `token ${color}`;
         tokenEl.dataset.color = color;
         tokenEl.dataset.index = tokenIndex;
-
-        // Shiny inner dot design
         tokenEl.innerHTML = `<span class="token-num">${tokenIndex + 1}</span>`;
 
-        // Check valid moves highlight
         if (isMyTurn && roomState.hasRolled && roomState.diceValue) {
           const validMoves = calculateValidMoves(roomState, myColor, roomState.diceValue);
           if (validMoves.includes(tokenIndex)) {
@@ -252,7 +244,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tokenEl.addEventListener('click', (e) => {
               e.stopPropagation();
               SoundFX.playMove();
-              socket.emit('move_token', { roomCode: myRoomCode, tokenIndex });
+              if (isOfflineMode) {
+                // Local move logic for offline
+                handleLocalMove(myColor, tokenIndex, roomState.diceValue);
+              } else {
+                socket.emit('move_token', { roomCode: myRoomCode, tokenIndex });
+              }
             });
           }
         }
@@ -263,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Append tokens & apply stack spacing
     Object.keys(cellTokenMap).forEach(cellId => {
       const container = document.getElementById(cellId);
       if (!container) return;
@@ -291,33 +287,46 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // RENDER UI PANELS & HOME COLOR PICKER
+  // RENDER UI PANELS
   // ==========================================================================
 
   function updateUI(roomState) {
     currentRoomState = roomState;
     myRoomCode = roomState.code;
 
-    // Room Header
-    roomCodeText.innerText = roomState.code;
-    roomCodeDisplayContainer.classList.remove('hidden');
+    // Room Header Code Display
+    if (roomState.code && roomState.code !== 'OFFLINE') {
+      roomCodeText.innerText = roomState.code;
+      roomCodeDisplayContainer.classList.remove('hidden');
+    } else if (isOfflineMode) {
+      roomCodeText.innerText = 'OFFLINE';
+      roomCodeDisplayContainer.classList.remove('hidden');
+    } else {
+      roomCodeDisplayContainer.classList.add('hidden');
+    }
 
     // Players Count & List
     playerCount.innerText = roomState.players.length;
     renderPlayersList(roomState);
 
-    // Turn Banner
+    // Turn Banner & Tap Dice Hint
     const currentPlayer = roomState.players[roomState.currentTurnIndex];
     if (!roomState.gameStarted) {
       turnBanner.className = 'turn-banner color-red';
       turnText.innerText = 'Waiting for game host to start...';
-      rollDiceBtn.disabled = true;
+      diceHintText.innerText = 'Waiting for Host...';
     } else {
       turnBanner.className = `turn-banner color-${currentPlayer.color}`;
       const isMyTurn = (currentPlayer.color === myColor);
       turnText.innerText = isMyTurn ? `YOUR TURN (${currentPlayer.color.toUpperCase()})` : `${currentPlayer.name}'s Turn (${currentPlayer.color.toUpperCase()})`;
 
-      rollDiceBtn.disabled = !(isMyTurn && !roomState.hasRolled);
+      if (isMyTurn && !roomState.hasRolled) {
+        diceHintText.innerText = '👉 Tap Dice to Roll!';
+      } else if (isMyTurn && roomState.hasRolled) {
+        diceHintText.innerText = 'Select a glowing token!';
+      } else {
+        diceHintText.innerText = `Waiting for ${currentPlayer.name}...`;
+      }
     }
 
     // Dice Value Display
@@ -346,8 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPlayersList(roomState) {
     playersList.innerHTML = '';
 
-    const isHost = roomState.players.find(p => p.socketId === socket.id)?.isHost;
-    const me = roomState.players.find(p => p.socketId === socket.id);
+    const isHost = roomState.players.find(p => p.socketId === socket?.id || p.id === 'p1')?.isHost;
+    const me = roomState.players.find(p => p.socketId === socket?.id || p.id === 'p1');
 
     roomState.players.forEach(p => {
       const card = document.createElement('div');
@@ -355,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = `player-card ${isTurn ? 'active-turn' : ''}`;
 
       const homeTokens = roomState.boardState[p.color] ? roomState.boardState[p.color].filter(s => s === 57).length : 0;
-      const isMe = (p.socketId === socket.id);
+      const isMe = (p.socketId === socket?.id || p.id === 'p1');
 
       card.innerHTML = `
         <div class="player-info">
@@ -378,21 +387,19 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      // Home Color Switch Listener
       const colorSelect = card.querySelector('.color-select-dropdown');
       if (colorSelect) {
         colorSelect.addEventListener('change', (e) => {
           SoundFX.playClick();
           const selectedColor = e.target.value;
           myColor = selectedColor;
-          socket.emit('select_color', { roomCode: myRoomCode, color: selectedColor });
+          if (socket) socket.emit('select_color', { roomCode: myRoomCode, color: selectedColor });
         });
       }
 
       playersList.appendChild(card);
     });
 
-    // Add open slots
     if (roomState.players.length < 4 && !roomState.gameStarted) {
       if (isHost) {
         const addBotBtn = document.createElement('button');
@@ -400,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addBotBtn.innerHTML = '+ Add AI Bot';
         addBotBtn.addEventListener('click', () => {
           SoundFX.playClick();
-          socket.emit('add_bot', { roomCode: myRoomCode });
+          if (socket) socket.emit('add_bot', { roomCode: myRoomCode });
         });
         playersList.appendChild(addBotBtn);
       }
@@ -424,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function set3DDiceFace(val) {
-    diceCube.className = `dice-cube show-${val}`;
+    diceCube.className = `dice-cube clickable-dice show-${val}`;
   }
 
   function triggerRollAnimation(val) {
@@ -451,8 +458,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // EVENT LISTENERS & COLOR PICKER CHIPS IN LOBBY
+  // EVENT LISTENERS (TAP DICE TO ROLL)
   // ==========================================================================
+
+  // TAP DIRECTLY ON 3D DICE CUBE TO ROLL
+  diceCube.addEventListener('click', () => {
+    if (!currentRoomState || !currentRoomState.gameStarted) return;
+    const currentPlayer = currentRoomState.players[currentRoomState.currentTurnIndex];
+    if (!currentPlayer || currentPlayer.color !== myColor || currentRoomState.hasRolled) return;
+
+    if (isOfflineMode) {
+      handleLocalRoll();
+    } else if (socket) {
+      socket.emit('roll_dice', { roomCode: myRoomCode });
+    }
+  });
+
+  // Start Game Button
+  startGameBtn.addEventListener('click', () => {
+    SoundFX.playClick();
+    if (socket && !isOfflineMode) {
+      socket.emit('start_game', { roomCode: myRoomCode });
+    } else {
+      currentRoomState.gameStarted = true;
+      updateUI(currentRoomState);
+    }
+  });
 
   // Tab switching inside lobby
   tabCreateRoom.addEventListener('click', () => {
@@ -486,7 +517,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const preferredColor = createRoomForm.querySelector('input[name="createColor"]:checked')?.value || 'red';
 
     localStorage.setItem('ludo_player_name', playerName);
-    socket.emit('create_room', { playerId: myPlayerId, playerName, webhookUrl, preferredColor });
+    if (socket && !isOfflineMode) {
+      socket.emit('create_room', { playerId: myPlayerId, playerName, webhookUrl, preferredColor });
+    } else {
+      enableOfflineFallbackMode();
+    }
   });
 
   // Join Room submit
@@ -497,25 +532,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const preferredColor = joinRoomForm.querySelector('input[name="joinColor"]:checked')?.value || 'green';
 
     localStorage.setItem('ludo_player_name', playerName);
-    socket.emit('join_room', { roomCode, playerId: myPlayerId, playerName, preferredColor });
-  });
-
-  // Roll Dice Button
-  rollDiceBtn.addEventListener('click', () => {
-    if (rollDiceBtn.disabled) return;
-    socket.emit('roll_dice', { roomCode: myRoomCode });
-  });
-
-  diceCube.addEventListener('click', () => {
-    if (!rollDiceBtn.disabled) {
-      socket.emit('roll_dice', { roomCode: myRoomCode });
+    if (socket && !isOfflineMode) {
+      socket.emit('join_room', { roomCode, playerId: myPlayerId, playerName, preferredColor });
+    } else {
+      enableOfflineFallbackMode();
     }
-  });
-
-  // Start Game Button
-  startGameBtn.addEventListener('click', () => {
-    SoundFX.playClick();
-    socket.emit('start_game', { roomCode: myRoomCode });
   });
 
   // Toggle Mute
@@ -528,8 +549,8 @@ document.addEventListener('DOMContentLoaded', () => {
   copyInviteLinkBtn.addEventListener('click', () => {
     const inviteUrl = `${window.location.origin}?room=${myRoomCode}`;
     navigator.clipboard.writeText(inviteUrl).then(() => {
-      copyInviteLinkBtn.querySelector('span').innerText = 'Copied!';
-      setTimeout(() => { copyInviteLinkBtn.querySelector('span').innerText = 'Copy Link'; }, 2000);
+      copyInviteLinkBtn.title = 'Copied!';
+      setTimeout(() => { copyInviteLinkBtn.title = 'Copy Invite Link'; }, 2000);
     });
   });
 
@@ -553,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     webhookTestBadge.className = 'test-result-badge';
     webhookTestBadge.classList.remove('hidden');
 
-    socket.emit('test_webhook', { webhookUrl: url });
+    if (socket) socket.emit('test_webhook', { webhookUrl: url });
   });
 
   // Save Webhook Settings
@@ -568,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
       MATCH_VICTORY: document.getElementById('evtMatchVictory').checked
     };
 
-    socket.emit('update_webhook', { roomCode: myRoomCode, webhookUrl, events });
+    if (socket) socket.emit('update_webhook', { roomCode: myRoomCode, webhookUrl, events });
     webhookModal.classList.add('hidden');
   });
 
@@ -576,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const msg = chatInput.value.trim();
-    if (msg && myRoomCode) {
+    if (msg && myRoomCode && socket) {
       socket.emit('send_chat', { roomCode: myRoomCode, message: msg });
       chatInput.value = '';
     }
@@ -595,7 +616,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Default Mobile View
   if (window.innerWidth <= 768) {
     gameContainer.classList.add('view-board');
   }
@@ -618,22 +638,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // SOCKET.IO RESPONSES
-  // ==========================================================================
-
-  // ==========================================================================
-  // OFFLINE / STANDALONE ENGINE FALLBACK (Runs without any server/localhost!)
+  // OFFLINE GAME ENGINE & SOCKET RESPONSES
   // ==========================================================================
 
   function enableOfflineFallbackMode() {
     if (isOfflineMode) return;
     isOfflineMode = true;
-    console.log('[Ludo Engine] Running in Standalone Offline Mode (Pass & Play)');
+    console.log('[Ludo Engine] Standalone Offline Mode Enabled');
 
     connectionStatus.className = 'status-indicator';
     connectionStatus.querySelector('.status-text').innerText = 'Offline Mode';
 
-    // Mock local room state
     currentRoomState = {
       code: 'OFFLINE',
       players: [
@@ -652,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
         blue: [0, 0, 0, 0]
       },
       winners: [],
-      logs: ['🎮 Game loaded in Standalone Offline Mode (Pass & Play)']
+      logs: ['🎮 Game running in Standalone Offline Mode']
     };
 
     myRoomCode = 'OFFLINE';
@@ -661,68 +676,88 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUI(currentRoomState);
   }
 
-  // Socket connection error handler -> fallback to offline mode
-  if (socket) {
-    socket.on('connect_error', () => {
-      console.warn('Cannot connect to server. Switching to Standalone Offline Mode...');
-      enableOfflineFallbackMode();
-    });
+  function handleLocalRoll() {
+    const dice = Math.floor(Math.random() * 6) + 1;
+    currentRoomState.diceValue = dice;
+    currentRoomState.hasRolled = true;
+    currentRoomState.logs.push(`🎲 Rolled ${dice}`);
+    triggerRollAnimation(dice);
+    updateUI(currentRoomState);
   }
 
-  socket.on('connect', () => {
-    connectionStatus.className = 'status-indicator online';
-    connectionStatus.querySelector('.status-text').innerText = 'Connected';
-
-    // Auto-Rejoin current room if user reloads page or clicks invite link again
-    const savedRoom = localStorage.getItem('ludo_room_code');
-    if (savedRoom && myPlayerId) {
-      socket.emit('rejoin_room', { roomCode: savedRoom, playerId: myPlayerId });
+  function handleLocalMove(color, tokenIndex, dice) {
+    const currentStep = currentRoomState.boardState[color][tokenIndex];
+    let newStep = currentStep === 0 ? 1 : currentStep + dice;
+    if (newStep <= 57) {
+      currentRoomState.boardState[color][tokenIndex] = newStep;
+      currentRoomState.hasRolled = false;
+      currentRoomState.diceValue = null;
+      currentRoomState.currentTurnIndex = (currentRoomState.currentTurnIndex + 1) % currentRoomState.players.length;
+      myColor = currentRoomState.players[currentRoomState.currentTurnIndex].color;
+      updateUI(currentRoomState);
     }
-  });
+  }
 
-  socket.on('disconnect', () => {
-    connectionStatus.className = 'status-indicator';
-    connectionStatus.querySelector('.status-text').innerText = 'Reconnecting...';
-  });
+  if (socket) {
+    socket.on('connect_error', () => {
+      enableOfflineFallbackMode();
+    });
 
-  socket.on('room_created', ({ roomCode, playerColor, roomState }) => {
-    myRoomCode = roomCode;
-    myColor = playerColor;
-    localStorage.setItem('ludo_room_code', roomCode);
-    lobbyModal.classList.add('hidden');
-    updateUI(roomState);
-  });
+    socket.on('connect', () => {
+      isOfflineMode = false;
+      connectionStatus.className = 'status-indicator online';
+      connectionStatus.querySelector('.status-text').innerText = 'Connected';
 
-  socket.on('room_joined', ({ roomCode, playerColor, roomState }) => {
-    myRoomCode = roomCode;
-    myColor = playerColor;
-    localStorage.setItem('ludo_room_code', roomCode);
-    lobbyModal.classList.add('hidden');
-    updateUI(roomState);
-  });
+      const savedRoom = localStorage.getItem('ludo_room_code');
+      if (savedRoom && savedRoom !== 'OFFLINE' && myPlayerId) {
+        socket.emit('rejoin_room', { roomCode: savedRoom, playerId: myPlayerId });
+      }
+    });
 
-  socket.on('game_state_update', (roomState) => {
-    if (roomState.diceValue && (!currentRoomState || currentRoomState.diceValue !== roomState.diceValue)) {
-      triggerRollAnimation(roomState.diceValue);
-    }
-    updateUI(roomState);
-  });
+    socket.on('disconnect', () => {
+      connectionStatus.className = 'status-indicator';
+      connectionStatus.querySelector('.status-text').innerText = 'Reconnecting...';
+    });
 
-  socket.on('webhook_test_result', ({ success, message }) => {
-    webhookTestBadge.innerText = success ? `HTTP 200 OK` : `Error: ${message}`;
-    webhookTestBadge.className = `test-result-badge ${success ? 'success' : 'error'}`;
-    webhookTestBadge.classList.remove('hidden');
-  });
+    socket.on('room_created', ({ roomCode, playerColor, roomState }) => {
+      myRoomCode = roomCode;
+      myColor = playerColor;
+      localStorage.setItem('ludo_room_code', roomCode);
+      lobbyModal.classList.add('hidden');
+      updateUI(roomState);
+    });
 
-  socket.on('chat_message', ({ sender, color, text }) => {
-    const msgEl = document.createElement('div');
-    msgEl.className = 'chat-msg';
-    msgEl.innerHTML = `<span class="sender" style="color: var(--color-${color})">${sender}:</span> <span>${text}</span>`;
-    chatMessages.appendChild(msgEl);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
+    socket.on('room_joined', ({ roomCode, playerColor, roomState }) => {
+      myRoomCode = roomCode;
+      myColor = playerColor;
+      localStorage.setItem('ludo_room_code', roomCode);
+      lobbyModal.classList.add('hidden');
+      updateUI(roomState);
+    });
 
-  socket.on('error_message', (msg) => {
-    alert(`Notice: ${msg}`);
-  });
+    socket.on('game_state_update', (roomState) => {
+      if (roomState.diceValue && (!currentRoomState || currentRoomState.diceValue !== roomState.diceValue)) {
+        triggerRollAnimation(roomState.diceValue);
+      }
+      updateUI(roomState);
+    });
+
+    socket.on('webhook_test_result', ({ success, message }) => {
+      webhookTestBadge.innerText = success ? `HTTP 200 OK` : `Error: ${message}`;
+      webhookTestBadge.className = `test-result-badge ${success ? 'success' : 'error'}`;
+      webhookTestBadge.classList.remove('hidden');
+    });
+
+    socket.on('chat_message', ({ sender, color, text }) => {
+      const msgEl = document.createElement('div');
+      msgEl.className = 'chat-msg';
+      msgEl.innerHTML = `<span class="sender" style="color: var(--color-${color})">${sender}:</span> <span>${text}</span>`;
+      chatMessages.appendChild(msgEl);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+
+    socket.on('error_message', (msg) => {
+      alert(`Notice: ${msg}`);
+    });
+  }
 });

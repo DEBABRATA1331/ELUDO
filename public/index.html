@@ -17,36 +17,22 @@
 </head>
 <body>
 
-  <!-- TOP NAVIGATION HEADER -->
+  <!-- SINGLE-LINE COMPACT TOP NAVIGATION HEADER -->
   <header class="app-header">
-    <div class="brand">
-      <div class="logo-icon-svg">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="4" fill="rgba(168,85,247,0.2)" stroke="#a855f7"/>
-          <circle cx="8.5" cy="8.5" r="1.5" fill="#a855f7"/>
-          <circle cx="15.5" cy="8.5" r="1.5" fill="#a855f7"/>
-          <circle cx="12" cy="12" r="1.5" fill="#06b6d4"/>
-          <circle cx="8.5" cy="15.5" r="1.5" fill="#a855f7"/>
-          <circle cx="15.5" cy="15.5" r="1.5" fill="#a855f7"/>
-        </svg>
-      </div>
-      <h1>LUDO <span class="accent-text">REALTIME</span></h1>
-      <span class="badge-tag">WEBHOOK ENABLED</span>
-    </div>
-
-    <div class="header-actions">
+    <div class="header-left">
       <!-- Connection Status -->
       <div id="connectionStatus" class="status-indicator online">
         <span class="status-dot"></span>
         <span class="status-text">Connected</span>
       </div>
+    </div>
 
+    <div class="header-actions">
       <!-- Webhook Config Button -->
-      <button id="openWebhookBtn" class="btn btn-secondary shadow-btn" title="Configure Webhook Events">
+      <button id="openWebhookBtn" class="btn btn-secondary btn-icon shadow-btn" title="Configure Webhook Events">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"/>
         </svg>
-        <span>Webhook Config</span>
       </button>
 
       <!-- Audio Mute Button -->
@@ -57,7 +43,7 @@
         </svg>
       </button>
 
-      <!-- Share Room Code Button -->
+      <!-- Share Room Code Badge & Copy Link -->
       <div id="roomCodeDisplayContainer" class="room-code-badge hidden">
         <span>ROOM: <strong id="roomCodeText">------</strong></span>
         <button id="copyInviteLinkBtn" class="btn btn-sm btn-accent" title="Copy Invite Link">
@@ -65,7 +51,6 @@
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
-          <span>Copy Link</span>
         </button>
       </div>
     </div>
@@ -87,29 +72,24 @@
       <!-- DICE & TURN CONTROLS -->
       <div class="controls-card glass-panel">
         <div id="turnBanner" class="turn-banner color-red">
-          <span id="turnText">Waiting for game to start...</span>
+          <span id="turnText">Waiting for game host to start...</span>
         </div>
 
         <div class="dice-action-area">
-          <!-- 3D Realistic Dice Object -->
-          <div id="diceCube" class="dice-cube" title="Click to Roll Dice">
-            <div class="dice-face face-1"><span></span></div>
-            <div class="dice-face face-2"><span></span><span></span></div>
-            <div class="dice-face face-3"><span></span><span></span><span></span></div>
-            <div class="dice-face face-4"><span></span><span></span><span></span><span></span></div>
-            <div class="dice-face face-5"><span></span><span></span><span></span><span></span><span></span></div>
-            <div class="dice-face face-6"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <!-- 3D Realistic Dice Object (Tap to Roll) -->
+          <div class="dice-wrapper">
+            <div id="diceCube" class="dice-cube clickable-dice" title="Tap Dice to Roll">
+              <div class="dice-face face-1"><span></span></div>
+              <div class="dice-face face-2"><span></span><span></span></div>
+              <div class="dice-face face-3"><span></span><span></span><span></span></div>
+              <div class="dice-face face-4"><span></span><span></span><span></span><span></span></div>
+              <div class="dice-face face-5"><span></span><span></span><span></span><span></span><span></span></div>
+              <div class="dice-face face-6"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <span class="dice-hint" id="diceHintText">Tap Dice to Roll</span>
           </div>
 
           <div class="dice-controls-right">
-            <button id="rollDiceBtn" class="btn btn-primary btn-large shadow-btn" disabled>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="4"/>
-                <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
-                <circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"/>
-              </svg>
-              <span>ROLL DICE</span>
-            </button>
             <div class="dice-result-badge" id="diceResultText">
               Roll Result: <strong id="diceValueDisplay">-</strong>
             </div>
