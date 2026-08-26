@@ -4,8 +4,19 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Socket.io Connection
-  const socket = io();
+  // Socket.io Connection with Graceful Offline Fallback
+  let socket = null;
+  let isOfflineMode = false;
+
+  try {
+    if (typeof io !== 'undefined') {
+      socket = io({ timeout: 4000, reconnectionAttempts: 2 });
+    } else {
+      enableOfflineFallbackMode();
+    }
+  } catch (e) {
+    enableOfflineFallbackMode();
+  }
 
   // Application State
   let myRoomCode = null;
@@ -590,6 +601,54 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   // SOCKET.IO RESPONSES
   // ==========================================================================
+
+  // ==========================================================================
+  // OFFLINE / STANDALONE ENGINE FALLBACK (Runs without any server/localhost!)
+  // ==========================================================================
+
+  function enableOfflineFallbackMode() {
+    if (isOfflineMode) return;
+    isOfflineMode = true;
+    console.log('[Ludo Engine] Running in Standalone Offline Mode (Pass & Play)');
+
+    connectionStatus.className = 'status-indicator';
+    connectionStatus.querySelector('.status-text').innerText = 'Offline Mode';
+
+    // Mock local room state
+    currentRoomState = {
+      code: 'OFFLINE',
+      players: [
+        { id: 'p1', socketId: 'p1', name: 'Player 1', color: 'red', isHost: true, isBot: false, connected: true },
+        { id: 'p2', socketId: 'p2', name: 'Player 2', color: 'yellow', isHost: false, isBot: false, connected: true }
+      ],
+      gameStarted: true,
+      currentTurnIndex: 0,
+      diceValue: null,
+      hasRolled: false,
+      consecutiveSixes: 0,
+      boardState: {
+        red: [0, 0, 0, 0],
+        green: [0, 0, 0, 0],
+        yellow: [0, 0, 0, 0],
+        blue: [0, 0, 0, 0]
+      },
+      winners: [],
+      logs: ['🎮 Game loaded in Standalone Offline Mode (Pass & Play)']
+    };
+
+    myRoomCode = 'OFFLINE';
+    myColor = 'red';
+    lobbyModal.classList.add('hidden');
+    updateUI(currentRoomState);
+  }
+
+  // Socket connection error handler -> fallback to offline mode
+  if (socket) {
+    socket.on('connect_error', () => {
+      console.warn('Cannot connect to server. Switching to Standalone Offline Mode...');
+      enableOfflineFallbackMode();
+    });
+  }
 
   socket.on('connect', () => {
     connectionStatus.className = 'status-indicator online';
