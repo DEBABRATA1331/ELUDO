@@ -214,13 +214,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // RENDER BOARD STATE & TOKENS
   // ==========================================================================
 
+  function getMyColor(roomState) {
+    if (!roomState || !roomState.players) return myColor;
+    const me = roomState.players.find(p => p.socketId === socket?.id || p.playerId === myPlayerId || p.id === 'p1');
+    if (me) {
+      myColor = me.color;
+      return me.color;
+    }
+    return myColor;
+  }
+
   function renderBoard(roomState) {
     document.querySelectorAll('.token').forEach(el => el.remove());
 
     if (!roomState || !roomState.boardState) return;
 
+    const playerColor = getMyColor(roomState);
     const currentPlayer = roomState.players[roomState.currentTurnIndex];
-    const isMyTurn = (currentPlayer && currentPlayer.color === myColor && roomState.gameStarted);
+    const isMyTurn = (currentPlayer && currentPlayer.color === playerColor && roomState.gameStarted);
     const cellTokenMap = {};
 
     Object.keys(roomState.boardState).forEach(color => {
@@ -243,14 +254,14 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenEl.innerHTML = `<span class="token-num">${tokenIndex + 1}</span>`;
 
         if (isMyTurn && roomState.hasRolled && roomState.diceValue) {
-          const validMoves = calculateValidMoves(roomState, myColor, roomState.diceValue);
+          const validMoves = calculateValidMoves(roomState, playerColor, roomState.diceValue);
           if (validMoves.includes(tokenIndex)) {
             tokenEl.classList.add('can-move');
             tokenEl.addEventListener('click', (e) => {
               e.stopPropagation();
               SoundFX.playMove();
               if (isOfflineMode) {
-                handleLocalMove(myColor, tokenIndex, roomState.diceValue);
+                handleLocalMove(playerColor, tokenIndex, roomState.diceValue);
               } else {
                 socket.emit('move_token', { roomCode: myRoomCode, tokenIndex });
               }
@@ -321,7 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
       diceHintText.innerText = 'Waiting for Host...';
     } else {
       turnBanner.className = `turn-banner color-${currentPlayer.color}`;
-      const isMyTurn = (currentPlayer.color === myColor);
+      const playerColor = getMyColor(roomState);
+      const isMyTurn = (currentPlayer.color === playerColor);
       const avatarHtml = (currentPlayer.avatar && currentPlayer.avatar.includes('/'))
         ? `<img src="${currentPlayer.avatar}" class="player-avatar-img" style="width:22px;height:22px;margin-right:4px;">`
         : `<span>${currentPlayer.avatar || '👤'}</span>`;

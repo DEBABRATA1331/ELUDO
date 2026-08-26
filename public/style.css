@@ -369,19 +369,26 @@ body {
   border: 2px solid #dbeafe;
 }
 
-.token.can-move {
-  animation: bounceToken 0.6s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+.base-spot .token {
+  width: 86%;
+  height: 86%;
 }
 
-.token.can-move.red { box-shadow: 0 0 18px var(--color-red), 0 0 26px var(--color-red); }
-.token.can-move.green { box-shadow: 0 0 18px var(--color-green), 0 0 26px var(--color-green); }
-.token.can-move.yellow { box-shadow: 0 0 18px var(--color-yellow), 0 0 26px var(--color-yellow); }
-.token.can-move.blue { box-shadow: 0 0 18px var(--color-blue), 0 0 26px var(--color-blue); }
+.token.can-move {
+  animation: bounceToken 0.5s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  z-index: 100 !important;
+  border: 2px solid #ffffff !important;
+}
+
+.token.can-move.red { box-shadow: 0 0 16px #ef4444, 0 0 30px #ef4444, inset 0 0 8px #ffffff; }
+.token.can-move.green { box-shadow: 0 0 16px #22c55e, 0 0 30px #22c55e, inset 0 0 8px #ffffff; }
+.token.can-move.yellow { box-shadow: 0 0 16px #facc15, 0 0 30px #facc15, inset 0 0 8px #ffffff; }
+.token.can-move.blue { box-shadow: 0 0 16px #3b82f6, 0 0 30px #3b82f6, inset 0 0 8px #ffffff; }
 
 @keyframes bounceToken {
-  0% { transform: translateY(0) scale(1.08); }
-  100% { transform: translateY(-5px) scale(1.28); }
+  0% { transform: scale(1.05); }
+  100% { transform: scale(1.35) translateY(-4px); }
 }
 
 .cell-multi-tokens {

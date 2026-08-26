@@ -635,9 +635,9 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Auto-move if only 1 valid token
-    if (validMoves.length === 1 && room.boardState[currentPlayer.color][validMoves[0]] === 0 && dice === 6) {
-      // Auto move out of base
+    // Auto-move if only 1 valid move or if all valid move tokens are in base (step 0) on rolling 6
+    const allInBase = validMoves.every(idx => room.boardState[currentPlayer.color][idx] === 0);
+    if (validMoves.length === 1 || (allInBase && dice === 6)) {
       executeMove(room, currentPlayer.color, validMoves[0], dice);
       return;
     }
