@@ -335,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
       set3DDiceFace(roomState.diceValue);
     } else {
       diceValueDisplay.innerText = '-';
+      set3DDiceFace(1);
     }
 
     // Webhook Target
@@ -431,7 +432,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function set3DDiceFace(val) {
-    diceCube.className = `dice-cube clickable-dice show-${val}`;
+    const face = (val && val >= 1 && val <= 6) ? val : 1;
+    diceCube.className = `dice-cube clickable-dice show-${face}`;
   }
 
   function triggerRollAnimation(val) {

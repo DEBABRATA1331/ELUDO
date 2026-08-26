@@ -394,6 +394,9 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  perspective: 800px;
+  -webkit-perspective: 800px;
+  isolation: isolate;
 }
 
 .dice-hint {
@@ -409,6 +412,7 @@ body {
   height: 64px;
   position: relative;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.3, 1.2);
   cursor: pointer;
   animation: pulseDice 2s infinite ease-in-out;
@@ -445,6 +449,8 @@ body {
   grid-template-rows: repeat(3, 1fr);
   padding: 6px;
   box-shadow: inset 0 0 8px rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.4);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .dice-face span {
