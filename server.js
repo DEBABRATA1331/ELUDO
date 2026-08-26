@@ -107,7 +107,7 @@ function getValidMoves(room, color, dice) {
 }
 
 // Initialize room state
-function createRoomState(code, hostName, webhookUrl = '', avatar = '🦊') {
+function createRoomState(code, hostName, webhookUrl = '', avatar = 'assets/avatars/avatar1.png') {
   return {
     code,
     players: [
@@ -116,7 +116,7 @@ function createRoomState(code, hostName, webhookUrl = '', avatar = '🦊') {
         socketId: null,
         name: hostName || 'Host',
         color: 'red',
-        avatar: avatar || '🦊',
+        avatar: avatar || 'assets/avatars/avatar1.png',
         isHost: true,
         isCoHost: false,
         isBot: false,

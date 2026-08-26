@@ -322,7 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       turnBanner.className = `turn-banner color-${currentPlayer.color}`;
       const isMyTurn = (currentPlayer.color === myColor);
-      turnText.innerText = isMyTurn ? `${currentPlayer.avatar || '🦊'} YOUR TURN (${currentPlayer.color.toUpperCase()})` : `${currentPlayer.avatar || '🦊'} ${currentPlayer.name}'s Turn (${currentPlayer.color.toUpperCase()})`;
+      const avatarHtml = (currentPlayer.avatar && currentPlayer.avatar.includes('/'))
+        ? `<img src="${currentPlayer.avatar}" class="player-avatar-img" style="width:22px;height:22px;margin-right:4px;">`
+        : `<span>${currentPlayer.avatar || '👤'}</span>`;
+
+      turnText.innerHTML = isMyTurn ? `${avatarHtml} <span>YOUR TURN (${currentPlayer.color.toUpperCase()})</span>` : `${avatarHtml} <span>${currentPlayer.name}'s Turn (${currentPlayer.color.toUpperCase()})</span>`;
 
       if (isMyTurn && !roomState.hasRolled) {
         diceHintText.innerText = '👉 Tap Dice to Roll!';
@@ -370,10 +374,11 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = `player-card ${isTurn ? 'active-turn' : ''}`;
 
       const isMe = (p.socketId === socket?.id || p.id === 'p1');
+      const avatarSrc = (p.avatar && p.avatar.includes('/')) ? p.avatar : 'assets/avatars/avatar1.png';
 
       card.innerHTML = `
         <div class="player-info">
-          <span class="player-avatar">${p.avatar || '🦊'}</span>
+          <img src="${avatarSrc}" class="player-avatar-img" alt="Avatar">
           <span class="color-dot ${p.color}" title="Home Base: ${p.color.toUpperCase()}"></span>
           <span class="player-name">${p.name} ${isMe ? '(You)' : ''}</span>
           <div class="player-tags">
@@ -597,12 +602,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Color chip selection in Create / Join form
-  document.querySelectorAll('.color-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const parent = chip.parentElement;
-      parent.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
+  // Color circle selection in Create / Join form
+  document.querySelectorAll('.color-circle').forEach(circle => {
+    circle.addEventListener('click', () => {
+      const parent = circle.parentElement;
+      parent.querySelectorAll('.color-circle').forEach(c => c.classList.remove('active'));
+      circle.classList.add('active');
     });
   });
 
@@ -610,13 +615,12 @@ document.addEventListener('DOMContentLoaded', () => {
   createRoomForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const playerName = document.getElementById('createPlayerName').value.trim();
-    const webhookUrl = document.getElementById('createWebhookUrl').value.trim();
     const preferredColor = createRoomForm.querySelector('input[name="createColor"]:checked')?.value || 'red';
-    const avatar = createRoomForm.querySelector('input[name="createAvatar"]:checked')?.value || '🦊';
+    const avatar = createRoomForm.querySelector('input[name="createAvatar"]:checked')?.value || 'assets/avatars/avatar1.png';
 
     localStorage.setItem('ludo_player_name', playerName);
     if (socket && !isOfflineMode) {
-      socket.emit('create_room', { playerId: myPlayerId, playerName, webhookUrl, preferredColor, avatar });
+      socket.emit('create_room', { playerId: myPlayerId, playerName, preferredColor, avatar });
     } else {
       enableOfflineFallbackMode();
     }
@@ -628,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerName = document.getElementById('joinPlayerName').value.trim();
     const roomCode = document.getElementById('joinRoomCode').value.trim().toUpperCase();
     const preferredColor = joinRoomForm.querySelector('input[name="joinColor"]:checked')?.value || 'green';
-    const avatar = joinRoomForm.querySelector('input[name="joinAvatar"]:checked')?.value || '🦁';
+    const avatar = joinRoomForm.querySelector('input[name="joinAvatar"]:checked')?.value || 'assets/avatars/avatar2.png';
 
     localStorage.setItem('ludo_player_name', playerName);
     if (socket && !isOfflineMode) {
@@ -778,8 +782,8 @@ document.addEventListener('DOMContentLoaded', () => {
     currentRoomState = {
       code: 'OFFLINE',
       players: [
-        { id: 'p1', socketId: 'p1', name: 'Player 1', color: 'red', avatar: '🦊', isHost: true, isBot: false, connected: true },
-        { id: 'p2', socketId: 'p2', name: 'Player 2', color: 'yellow', avatar: '🦁', isHost: false, isBot: false, connected: true }
+        { id: 'p1', socketId: 'p1', name: 'Player 1', color: 'red', avatar: 'assets/avatars/avatar1.png', isHost: true, isBot: false, connected: true },
+        { id: 'p2', socketId: 'p2', name: 'Player 2', color: 'yellow', avatar: 'assets/avatars/avatar2.png', isHost: false, isBot: false, connected: true }
       ],
       gameStarted: true,
       currentTurnIndex: 0,

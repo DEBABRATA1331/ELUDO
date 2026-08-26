@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Ludo Real-Time - Webhook Online Multiplayer</title>
+  <title>Ludo Real-Time - Online Multiplayer</title>
   <!-- Modern Font: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -175,13 +175,10 @@
 
           <!-- Tab 2: Webhook Feed -->
           <div id="webhookLogs" class="tab-pane">
-            <div class="webhook-feed-header">
-              <span class="feed-status" id="webhookTargetUrl">Webhook Target: Not Configured</span>
-            </div>
             <div id="webhookFeedContainer" class="log-stream code-font"></div>
           </div>
 
-          <!-- Tab 3: Chat Box (Clean Chat Stream with Quick Taunts & Shortcuts) -->
+          <!-- Tab 3: Chat Box -->
           <div id="chatBox" class="tab-pane">
             <div id="chatMessages" class="chat-messages"></div>
             
@@ -206,7 +203,7 @@
 
   </main>
 
-  <!-- LOBBY OVERLAY MODAL (Join / Create Room & Avatar Selector) -->
+  <!-- LOBBY OVERLAY MODAL (Join / Create Room, AI Human Avatars & Single-Line Color Circles) -->
   <div id="lobbyModal" class="modal-backdrop">
     <div class="modal-box glass-panel modal-lg">
       <div class="modal-hero">
@@ -220,7 +217,7 @@
           </svg>
         </div>
         <h2>Online Real-Time Ludo</h2>
-        <p>Choose your avatar & home base color, play with friends in real-time, and trigger live Webhooks!</p>
+        <p>Choose your avatar & home base, play with friends in real-time!</p>
       </div>
 
       <div class="lobby-tabs">
@@ -236,33 +233,26 @@
         </div>
 
         <div class="form-group">
-          <label>Choose Your Avatar:</label>
+          <label>Select AI Human Avatar:</label>
           <div class="avatar-picker-grid" id="createAvatarGrid">
-            <label class="avatar-chip active"><input type="radio" name="createAvatar" value="🦊" checked> 🦊 Fox</label>
-            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🦁"> 🦁 Lion</label>
-            <label class="avatar-chip"><input type="radio" name="createAvatar" value="👑"> 👑 Crown</label>
-            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🐲"> 🐲 Dragon</label>
-            <label class="avatar-chip"><input type="radio" name="createAvatar" value="⚡"> ⚡ Bolt</label>
-            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🚀"> 🚀 Rocket</label>
-            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🤖"> 🤖 Bot</label>
-            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🎯"> 🎯 Target</label>
+            <label class="avatar-chip active"><input type="radio" name="createAvatar" value="assets/avatars/avatar1.png" checked><img src="assets/avatars/avatar1.png" alt="Avatar 1"></label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="assets/avatars/avatar2.png"><img src="assets/avatars/avatar2.png" alt="Avatar 2"></label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="assets/avatars/avatar3.png"><img src="assets/avatars/avatar3.png" alt="Avatar 3"></label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="assets/avatars/avatar4.png"><img src="assets/avatars/avatar4.png" alt="Avatar 4"></label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="assets/avatars/avatar5.png"><img src="assets/avatars/avatar5.png" alt="Avatar 5"></label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="assets/avatars/avatar6.png"><img src="assets/avatars/avatar6.png" alt="Avatar 6"></label>
           </div>
         </div>
 
+        <!-- SINGLE-LINE COLOR CIRCLE PICKER -->
         <div class="form-group">
-          <label>Select Preferred Home Base Position:</label>
-          <div class="color-picker-grid">
-            <label class="color-chip red active"><input type="radio" name="createColor" value="red" checked> Top-Left (Red)</label>
-            <label class="color-chip green"><input type="radio" name="createColor" value="green"> Top-Right (Green)</label>
-            <label class="color-chip yellow"><input type="radio" name="createColor" value="yellow"> Bottom-Right (Yellow)</label>
-            <label class="color-chip blue"><input type="radio" name="createColor" value="blue"> Bottom-Left (Blue)</label>
+          <label>Select Home Base Color:</label>
+          <div class="single-line-color-picker">
+            <label class="color-circle red active" title="Top-Left (Red)"><input type="radio" name="createColor" value="red" checked></label>
+            <label class="color-circle green" title="Top-Right (Green)"><input type="radio" name="createColor" value="green"></label>
+            <label class="color-circle yellow" title="Bottom-Right (Yellow)"><input type="radio" name="createColor" value="yellow"></label>
+            <label class="color-circle blue" title="Bottom-Left (Blue)"><input type="radio" name="createColor" value="blue"></label>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label for="createWebhookUrl">Webhook Target URL (Optional)</label>
-          <input type="url" id="createWebhookUrl" placeholder="https://discord.com/api/webhooks/... or custom server">
-          <small class="form-help">Game events (rolls, captures, wins) will be sent as JSON payloads to this endpoint.</small>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block btn-lg shadow-btn">
@@ -282,26 +272,25 @@
         </div>
 
         <div class="form-group">
-          <label>Choose Your Avatar:</label>
+          <label>Select AI Human Avatar:</label>
           <div class="avatar-picker-grid" id="joinAvatarGrid">
-            <label class="avatar-chip active"><input type="radio" name="joinAvatar" value="🦁" checked> 🦁 Lion</label>
-            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🦊"> 🦊 Fox</label>
-            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="👑"> 👑 Crown</label>
-            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🐲"> 🐲 Dragon</label>
-            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="⚡"> ⚡ Bolt</label>
-            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🚀"> 🚀 Rocket</label>
-            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🤖"> 🤖 Bot</label>
-            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🎯"> 🎯 Target</label>
+            <label class="avatar-chip active"><input type="radio" name="joinAvatar" value="assets/avatars/avatar2.png" checked><img src="assets/avatars/avatar2.png" alt="Avatar 2"></label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="assets/avatars/avatar1.png"><img src="assets/avatars/avatar1.png" alt="Avatar 1"></label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="assets/avatars/avatar3.png"><img src="assets/avatars/avatar3.png" alt="Avatar 3"></label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="assets/avatars/avatar4.png"><img src="assets/avatars/avatar4.png" alt="Avatar 4"></label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="assets/avatars/avatar5.png"><img src="assets/avatars/avatar5.png" alt="Avatar 5"></label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="assets/avatars/avatar6.png"><img src="assets/avatars/avatar6.png" alt="Avatar 6"></label>
           </div>
         </div>
 
+        <!-- SINGLE-LINE COLOR CIRCLE PICKER -->
         <div class="form-group">
-          <label>Select Preferred Home Base Position:</label>
-          <div class="color-picker-grid">
-            <label class="color-chip red active"><input type="radio" name="joinColor" value="red" checked> Top-Left (Red)</label>
-            <label class="color-chip green"><input type="radio" name="joinColor" value="green"> Top-Right (Green)</label>
-            <label class="color-chip yellow"><input type="radio" name="joinColor" value="yellow"> Bottom-Right (Yellow)</label>
-            <label class="color-chip blue"><input type="radio" name="joinColor" value="blue"> Bottom-Left (Blue)</label>
+          <label>Select Home Base Color:</label>
+          <div class="single-line-color-picker">
+            <label class="color-circle red active" title="Top-Left (Red)"><input type="radio" name="joinColor" value="red" checked></label>
+            <label class="color-circle green" title="Top-Right (Green)"><input type="radio" name="joinColor" value="green"></label>
+            <label class="color-circle yellow" title="Bottom-Right (Yellow)"><input type="radio" name="joinColor" value="yellow"></label>
+            <label class="color-circle blue" title="Bottom-Left (Blue)"><input type="radio" name="joinColor" value="blue"></label>
           </div>
         </div>
 
