@@ -394,7 +394,9 @@ io.on('connection', (socket) => {
     const code = roomCode ? roomCode.trim().toUpperCase() : '';
     const room = rooms[code];
 
-    if (!room || !playerId) return;
+    if (!room || !playerId) {
+      return socket.emit('rejoin_failed', { message: 'Room not found or expired' });
+    }
 
     const existingPlayer = room.players.find(p => p.playerId === playerId);
     if (existingPlayer) {
@@ -405,6 +407,8 @@ io.on('connection', (socket) => {
       room.logs.push(`⚡ ${existingPlayer.name} reconnected to game`);
       socket.emit('room_joined', { roomCode: code, playerColor: existingPlayer.color, roomState: room });
       io.to(code).emit('game_state_update', room);
+    } else {
+      socket.emit('rejoin_failed', { message: 'Player session not found in room' });
     }
   });
 

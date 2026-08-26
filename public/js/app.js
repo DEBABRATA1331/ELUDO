@@ -720,7 +720,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (socket) {
     socket.on('connect_error', () => {
-      enableOfflineFallbackMode();
+      connectionStatus.className = 'status-indicator';
+      connectionStatus.querySelector('.status-text').innerText = 'Connecting...';
+      if (window.location.protocol === 'file:') {
+        enableOfflineFallbackMode();
+      }
     });
 
     socket.on('connect', () => {
@@ -732,6 +736,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (savedRoom && savedRoom !== 'OFFLINE' && myPlayerId) {
         socket.emit('rejoin_room', { roomCode: savedRoom, playerId: myPlayerId });
       }
+    });
+
+    socket.on('rejoin_failed', () => {
+      console.log('[Rejoin Failed] Cleared expired room code');
+      myRoomCode = null;
+      localStorage.removeItem('ludo_room_code');
+      roomCodeDisplayContainer.classList.add('hidden');
+      lobbyModal.classList.remove('hidden');
     });
 
     socket.on('disconnect', () => {
