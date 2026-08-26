@@ -702,13 +702,15 @@ body {
   cursor: pointer;
 }
 
-/* AVATAR PICKER GRID */
+/* AVATAR PICKER GRID (RESPONSIVE 6-COL GRID) */
 .avatar-picker-grid {
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
   align-items: center;
-  gap: 10px;
-  margin-top: 4px;
+  justify-items: center;
+  margin-top: 6px;
+  width: 100%;
 }
 
 .avatar-chip {
@@ -717,11 +719,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 .avatar-chip img {
-  width: 48px;
-  height: 48px;
+  width: 100%;
+  max-width: 46px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid transparent;
@@ -730,24 +734,26 @@ body {
 
 .avatar-chip.active img {
   border-color: var(--comic-yellow);
-  box-shadow: 0 0 18px var(--comic-yellow);
-  transform: scale(1.15);
+  box-shadow: 0 0 14px var(--comic-yellow);
+  transform: scale(1.08);
 }
 
 .avatar-chip input { display: none; }
 
-/* SINGLE-LINE COLOR CIRCLE PICKER */
+/* SINGLE-LINE COLOR CIRCLE PICKER (RESPONSIVE 4-COL GRID) */
 .single-line-color-picker {
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
   align-items: center;
-  gap: 12px;
+  justify-items: center;
   margin-top: 6px;
+  width: 100%;
 }
 
 .color-circle {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -762,9 +768,9 @@ body {
 .color-circle.blue { background: radial-gradient(circle at 35% 35%, #93c5fd, #2563eb); }
 
 .color-circle.active {
-  transform: scale(1.22);
+  transform: scale(1.15);
   border: 3px solid #ffffff;
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.9);
 }
 
 .color-circle input { display: none; }
@@ -1019,6 +1025,8 @@ body {
   animation: modalAppear 0.3s ease-out;
   border: 3px solid var(--comic-yellow);
   box-shadow: 0 10px 35px rgba(0,0,0,0.8);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .modal-lg { max-width: 500px; }
