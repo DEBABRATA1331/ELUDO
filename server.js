@@ -320,29 +320,45 @@ io.on('connection', (socket) => {
   console.log(`[Socket Connected] ID: ${socket.id}`);
 
   // 1. Create Room
-  socket.on('create_room', ({ playerName, webhookUrl, preferredColor }) => {
+  socket.on('create_room', ({ playerId, playerName, webhookUrl, preferredColor }) => {
     const code = generateRoomCode();
     const room = createRoomState(code, playerName, webhookUrl);
+    
+    room.players[0].playerId = playerId || socket.id;
+    room.players[0].socketId = socket.id;
     if (preferredColor && COLORS.includes(preferredColor)) {
       room.players[0].color = preferredColor;
     }
-    room.players[0].socketId = socket.id;
 
     rooms[code] = room;
     socket.join(code);
 
     socket.emit('room_created', { roomCode: code, playerColor: room.players[0].color, roomState: room });
-    console.log(`[Room Created] Code: ${code}, Host: ${playerName}, Color: ${room.players[0].color}`);
+    console.log(`[Room Created] Code: ${code}, Host: ${playerName}, PlayerID: ${room.players[0].playerId}`);
   });
 
-  // 2. Join Room
-  socket.on('join_room', ({ roomCode, playerName, preferredColor }) => {
+  // 2. Join Room / Re-bind existing player
+  socket.on('join_room', ({ roomCode, playerId, playerName, preferredColor }) => {
     const code = roomCode.trim().toUpperCase();
     const room = rooms[code];
 
     if (!room) {
       return socket.emit('error_message', 'Room not found. Check the code!');
     }
+
+    // Check if player already exists in room (e.g. page refresh / link click)
+    const existingPlayer = playerId ? room.players.find(p => p.playerId === playerId) : null;
+    if (existingPlayer) {
+      existingPlayer.socketId = socket.id;
+      existingPlayer.connected = true;
+      if (playerName) existingPlayer.name = playerName;
+      socket.join(code);
+
+      room.logs.push(`⚡ ${existingPlayer.name} reconnected`);
+      socket.emit('room_joined', { roomCode: code, playerColor: existingPlayer.color, roomState: room });
+      return io.to(code).emit('game_state_update', room);
+    }
+
     if (room.gameStarted) {
       return socket.emit('error_message', 'Game already in progress!');
     }
@@ -356,6 +372,7 @@ io.on('connection', (socket) => {
 
     const newPlayer = {
       id: socket.id,
+      playerId: playerId || socket.id,
       socketId: socket.id,
       name: playerName || `Player ${room.players.length + 1}`,
       color: assignedColor,
@@ -370,6 +387,25 @@ io.on('connection', (socket) => {
 
     socket.emit('room_joined', { roomCode: code, playerColor: assignedColor, roomState: room });
     io.to(code).emit('game_state_update', room);
+  });
+
+  // 3. Dedicated Rejoin Handshake (Page Reload / Network Drop)
+  socket.on('rejoin_room', ({ roomCode, playerId }) => {
+    const code = roomCode ? roomCode.trim().toUpperCase() : '';
+    const room = rooms[code];
+
+    if (!room || !playerId) return;
+
+    const existingPlayer = room.players.find(p => p.playerId === playerId);
+    if (existingPlayer) {
+      existingPlayer.socketId = socket.id;
+      existingPlayer.connected = true;
+      socket.join(code);
+
+      room.logs.push(`⚡ ${existingPlayer.name} reconnected to game`);
+      socket.emit('room_joined', { roomCode: code, playerColor: existingPlayer.color, roomState: room });
+      io.to(code).emit('game_state_update', room);
+    }
   });
 
   // Select / Change Color in Lobby
@@ -391,7 +427,7 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('game_state_update', room);
   });
 
-  // 3. Add AI Bot
+  // 4. Add AI Bot
   socket.on('add_bot', ({ roomCode, preferredColor }) => {
     const room = rooms[roomCode];
     if (!room || room.gameStarted || room.players.length >= 4) return;
@@ -405,6 +441,7 @@ io.on('connection', (socket) => {
 
     const botPlayer = {
       id: `bot_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      playerId: `bot_${Date.now()}`,
       socketId: null,
       name: botName,
       color: assignedColor,
@@ -592,14 +629,25 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 11. Disconnect
+  // 11. Disconnect Handler & Host Migration
   socket.on('disconnect', () => {
     console.log(`[Socket Disconnected] ID: ${socket.id}`);
     Object.values(rooms).forEach(room => {
       const player = room.players.find(p => p.socketId === socket.id);
       if (player) {
         player.connected = false;
-        room.logs.push(`⚠️ ${player.name} disconnected`);
+        room.logs.push(`⚠️ ${player.name} disconnected (Reconnecting...)`);
+
+        // Automatic Host Migration if original Host drops
+        if (player.isHost) {
+          player.isHost = false;
+          const nextHost = room.players.find(p => p.connected && !p.isBot);
+          if (nextHost) {
+            nextHost.isHost = true;
+            room.logs.push(`👑 Host transferred to ${nextHost.name}`);
+          }
+        }
+
         io.to(room.code).emit('game_state_update', room);
       }
     });

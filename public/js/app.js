@@ -4,13 +4,30 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Socket.io Connection with Graceful Offline Fallback
+  // Persistent Player Identity Key in LocalStorage
+  function getOrCreatePlayerId() {
+    let id = localStorage.getItem('ludo_player_id');
+    if (!id) {
+      id = 'pid_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+      localStorage.setItem('ludo_player_id', id);
+    }
+    return id;
+  }
+  const myPlayerId = getOrCreatePlayerId();
+
+  // Socket.io Connection with Fast Reconnection Options & Graceful Offline Fallback
   let socket = null;
   let isOfflineMode = false;
 
   try {
     if (typeof io !== 'undefined') {
-      socket = io({ timeout: 4000, reconnectionAttempts: 2 });
+      socket = io({
+        reconnection: true,
+        reconnectionAttempts: 50,
+        reconnectionDelay: 500,
+        reconnectionDelayMax: 1500,
+        timeout: 10000
+      });
     } else {
       enableOfflineFallbackMode();
     }
@@ -468,7 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const webhookUrl = document.getElementById('createWebhookUrl').value.trim();
     const preferredColor = createRoomForm.querySelector('input[name="createColor"]:checked')?.value || 'red';
 
-    socket.emit('create_room', { playerName, webhookUrl, preferredColor });
+    localStorage.setItem('ludo_player_name', playerName);
+    socket.emit('create_room', { playerId: myPlayerId, playerName, webhookUrl, preferredColor });
   });
 
   // Join Room submit
@@ -478,7 +496,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const roomCode = document.getElementById('joinRoomCode').value.trim().toUpperCase();
     const preferredColor = joinRoomForm.querySelector('input[name="joinColor"]:checked')?.value || 'green';
 
-    socket.emit('join_room', { roomCode, playerName, preferredColor });
+    localStorage.setItem('ludo_player_name', playerName);
+    socket.emit('join_room', { roomCode, playerId: myPlayerId, playerName, preferredColor });
   });
 
   // Roll Dice Button
@@ -653,16 +672,23 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('connect', () => {
     connectionStatus.className = 'status-indicator online';
     connectionStatus.querySelector('.status-text').innerText = 'Connected';
+
+    // Auto-Rejoin current room if user reloads page or clicks invite link again
+    const savedRoom = localStorage.getItem('ludo_room_code');
+    if (savedRoom && myPlayerId) {
+      socket.emit('rejoin_room', { roomCode: savedRoom, playerId: myPlayerId });
+    }
   });
 
   socket.on('disconnect', () => {
     connectionStatus.className = 'status-indicator';
-    connectionStatus.querySelector('.status-text').innerText = 'Disconnected';
+    connectionStatus.querySelector('.status-text').innerText = 'Reconnecting...';
   });
 
   socket.on('room_created', ({ roomCode, playerColor, roomState }) => {
     myRoomCode = roomCode;
     myColor = playerColor;
+    localStorage.setItem('ludo_room_code', roomCode);
     lobbyModal.classList.add('hidden');
     updateUI(roomState);
   });
@@ -670,6 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('room_joined', ({ roomCode, playerColor, roomState }) => {
     myRoomCode = roomCode;
     myColor = playerColor;
+    localStorage.setItem('ludo_room_code', roomCode);
     lobbyModal.classList.add('hidden');
     updateUI(roomState);
   });
