@@ -15,18 +15,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const myPlayerId = getOrCreatePlayerId();
 
-  // Socket.io Connection with Fast Reconnection Options
+  // Socket.io Connection with Fast Reconnection & Serverless Fallback
   let socket = null;
   let isOfflineMode = false;
+  let connectErrorCount = 0;
 
   try {
     if (typeof io !== 'undefined') {
-      socket = io({
+      // Connect to window.LUDO_SERVER_URL if specified, otherwise current origin
+      const serverUrl = window.LUDO_SERVER_URL || window.location.origin;
+      socket = io(serverUrl, {
+        transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 50,
-        reconnectionDelay: 500,
-        reconnectionDelayMax: 1500,
-        timeout: 10000
+        reconnectionAttempts: 4,
+        reconnectionDelay: 1000,
+        timeout: 5000
       });
     } else {
       enableOfflineFallbackMode();
@@ -825,10 +828,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (socket) {
-    socket.on('connect_error', () => {
+    socket.on('connect_error', (err) => {
+      connectErrorCount++;
       connectionStatus.className = 'status-indicator';
       connectionStatus.querySelector('.status-text').innerText = 'Connecting...';
-      if (window.location.protocol === 'file:') {
+
+      // If serverless (Vercel) fails Socket.io polling with 400 Bad Request, fall back smoothly to Standalone Offline Mode
+      if (connectErrorCount >= 3 || window.location.protocol === 'file:') {
+        console.warn('[Socket.io] Backend serverless/polling connection failed. Enabling Offline Mode.', err);
+        socket.disconnect();
         enableOfflineFallbackMode();
       }
     });
