@@ -1,6 +1,6 @@
 /**
- * LUDO REAL-TIME FRONTEND APPLICATION SCRIPT
- * Manages Socket.io events, DOM Board Rendering, Avatars, Host Controls, Quick Taunts & Board Poke Animations
+ * LUDO REAL-TIME FRONTEND APPLICATION SCRIPT (LUDO 6IX)
+ * Manages Socket.io events, DOM Board Rendering, Yard Badges, Live Chat & Floating Animations
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const myPlayerId = getOrCreatePlayerId();
 
-  // Socket.io Connection with Fast Reconnection Options & Graceful Offline Fallback
+  // Socket.io Connection with Fast Reconnection Options
   let socket = null;
   let isOfflineMode = false;
 
@@ -67,9 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const playersList = document.getElementById('playersList');
   const startGameBtn = document.getElementById('startGameBtn');
 
-  const logsContainer = document.getElementById('logsContainer');
-  const webhookFeedContainer = document.getElementById('webhookFeedContainer');
-  const webhookTargetUrl = document.getElementById('webhookTargetUrl');
   const chatMessages = document.getElementById('chatMessages');
   const chatForm = document.getElementById('chatForm');
   const chatInput = document.getElementById('chatInput');
@@ -104,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   buildBoardGrid();
 
   // ==========================================================================
-  // BOARD GRID GENERATION (REALISTIC)
+  // BOARD GRID GENERATION (REALISTIC WITH YARD BADGES & BASE COLORED SPOTS)
   // ==========================================================================
 
   function buildBoardGrid() {
@@ -138,12 +135,22 @@ document.addEventListener('DOMContentLoaded', () => {
     baseCell.style.gridRow = `${row + 1} / span 6`;
     baseCell.style.gridColumn = `${col + 1} / span 6`;
 
+    // Yard Home Player Badge (Avatar + Name Overlay on Board)
+    const badge = document.createElement('div');
+    badge.className = `yard-badge yard-badge-${color}`;
+    badge.id = `yard_badge_${color}`;
+    badge.innerHTML = `
+      <img src="assets/avatars/avatar1.png" class="yard-badge-img" id="yard_avatar_${color}">
+      <span class="yard-badge-name" id="yard_name_${color}">${color.toUpperCase()}</span>
+    `;
+    baseCell.appendChild(badge);
+
     const inner = document.createElement('div');
     inner.className = 'base-inner';
 
     for (let i = 0; i < 4; i++) {
       const spot = document.createElement('div');
-      spot.className = 'base-spot';
+      spot.className = `base-spot base-spot-${color}`;
       spot.id = `base_spot_${color}_${i}`;
       inner.appendChild(spot);
     }
@@ -302,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // RENDER UI PANELS, AVATARS & HOST CONTROLS
+  // RENDER UI PANELS, AVATARS, YARD BADGES & HOST CONTROLS
   // ==========================================================================
 
   function updateUI(roomState) {
@@ -323,6 +330,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Players Count & List
     playerCount.innerText = roomState.players.length;
     renderPlayersList(roomState);
+
+    // Update 4 Yard Player Badges on Board
+    ['red', 'green', 'yellow', 'blue'].forEach(color => {
+      const p = roomState.players.find(player => player.color === color);
+      const nameEl = document.getElementById(`yard_name_${color}`);
+      const avatarEl = document.getElementById(`yard_avatar_${color}`);
+      const badgeEl = document.getElementById(`yard_badge_${color}`);
+
+      if (p) {
+        if (nameEl) nameEl.innerText = p.name;
+        if (avatarEl) {
+          avatarEl.src = (p.avatar && p.avatar.includes('/')) ? p.avatar : 'assets/avatars/avatar1.png';
+        }
+        if (badgeEl) {
+          const isTurn = roomState.gameStarted && roomState.players[roomState.currentTurnIndex]?.color === color;
+          badgeEl.classList.toggle('active-turn-yard', isTurn);
+        }
+      } else {
+        if (nameEl) nameEl.innerText = color.toUpperCase();
+        if (badgeEl) badgeEl.classList.remove('active-turn-yard');
+      }
+    });
 
     // Turn Banner & Tap Dice Hint
     const currentPlayer = roomState.players[roomState.currentTurnIndex];
@@ -358,14 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
       set3DDiceFace(1);
     }
 
-    // Webhook Target
-    if (roomState.webhookUrl) {
-      webhookTargetUrl.innerText = `Webhook Target: ${roomState.webhookUrl}`;
-    } else {
-      webhookTargetUrl.innerText = 'Webhook Target: Not Configured';
-    }
-
-    renderLogs(roomState.logs);
     renderBoard(roomState);
 
     if (roomState.winners && roomState.winners.length > 0) {
@@ -462,22 +483,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Strictly enforce ONLY Host / Co-Host can start match
     if (me && (me.isHost || me.isCoHost) && !roomState.gameStarted) {
       startGameBtn.classList.remove('hidden');
     } else {
       startGameBtn.classList.add('hidden');
     }
-  }
-
-  function renderLogs(logs) {
-    logsContainer.innerHTML = '';
-    logs.slice().reverse().forEach(log => {
-      const entry = document.createElement('div');
-      entry.className = 'log-entry';
-      entry.innerText = log;
-      logsContainer.appendChild(entry);
-    });
   }
 
   function set3DDiceFace(val) {
@@ -509,39 +519,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // POKE BOARD ANIMATIONS
+  // FLOATING BOARD ANIMATIONS & POKES
   // ==========================================================================
+
+  function showFloatingBoardBubble({ sender, color, text }) {
+    SoundFX.playClick();
+    const bubble = document.createElement('div');
+    bubble.className = `floating-board-bubble bubble-${color || 'red'}`;
+    bubble.innerHTML = `<strong>${sender}:</strong> ${text}`;
+
+    boardPokeOverlay.appendChild(bubble);
+    setTimeout(() => bubble.remove(), 2600);
+  }
 
   function triggerBoardPokeAnimation({ senderName, senderColor, targetColor, pokeType }) {
     SoundFX.playPoke();
 
     const pokes = {
-      punch: '🥊',
-      tomato: '🍅',
-      lightning: '⚡',
-      bomb: '💣',
-      water: '💦'
+      punch: '🥊 PUNCH!',
+      tomato: '🍅 TOMATO!',
+      lightning: '⚡ LIGHTNING!',
+      bomb: '💣 BOMB!',
+      water: '💦 WATER SPLASH!'
     };
 
-    const emoji = pokes[pokeType] || '🥊';
-    const pokeEl = document.createElement('div');
-    pokeEl.className = 'flying-poke-item';
-    pokeEl.innerText = emoji;
-
-    // Position targets based on home bases (red top-left, green top-right, yellow bottom-right, blue bottom-left)
-    const posMap = {
-      red: { top: '25%', left: '25%' },
-      green: { top: '25%', left: '75%' },
-      yellow: { top: '75%', left: '75%' },
-      blue: { top: '75%', left: '25%' }
-    };
-
-    const targetPos = posMap[targetColor] || { top: '50%', left: '50%' };
-    pokeEl.style.top = targetPos.top;
-    pokeEl.style.left = targetPos.left;
-
-    boardPokeOverlay.appendChild(pokeEl);
-    setTimeout(() => pokeEl.remove(), 1400);
+    const text = pokes[pokeType] || '🥊 POKED!';
+    showFloatingBoardBubble({ sender: senderName || 'Player', color: senderColor || 'red', text: `${text} 👉 ${targetColor ? targetColor.toUpperCase() : ''}` });
   }
 
   // ==========================================================================
@@ -552,7 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
   diceCube.addEventListener('click', () => {
     if (!currentRoomState || !currentRoomState.gameStarted) return;
     const currentPlayer = currentRoomState.players[currentRoomState.currentTurnIndex];
-    if (!currentPlayer || currentPlayer.color !== myColor || currentRoomState.hasRolled) return;
+    const playerColor = getMyColor(currentRoomState);
+    if (!currentPlayer || currentPlayer.color !== playerColor || currentRoomState.hasRolled) return;
 
     if (isOfflineMode) {
       handleLocalRoll();
@@ -754,26 +758,6 @@ document.addEventListener('DOMContentLoaded', () => {
     gameContainer.classList.add('view-board');
   }
 
-  // Sidebar Tab Switching & Unread Counter Reset
-  document.querySelectorAll('.panel-tabs .tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.panel-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-
-      btn.classList.add('active');
-      const targetId = btn.dataset.tab;
-      document.getElementById(targetId).classList.add('active');
-
-      if (targetId === 'chatBox') {
-        unreadChatCount = 0;
-        chatBadge.innerText = '0';
-        chatBadge.classList.add('hidden');
-        mobileChatBadge.innerText = '0';
-        mobileChatBadge.classList.add('hidden');
-      }
-    });
-  });
-
   closeVictoryBtn.addEventListener('click', () => {
     victoryModal.classList.add('hidden');
     lobbyModal.classList.remove('hidden');
@@ -909,15 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chatMessages.appendChild(msgEl);
       chatMessages.scrollTop = chatMessages.scrollHeight;
 
-      // Update Unread Counter if Chat tab is not active
-      const isChatTabActive = document.getElementById('chatBox').classList.contains('active');
-      if (!isChatTabActive) {
-        unreadChatCount++;
-        chatBadge.innerText = unreadChatCount;
-        chatBadge.classList.remove('hidden');
-        mobileChatBadge.innerText = unreadChatCount;
-        mobileChatBadge.classList.remove('hidden');
-      }
+      showFloatingBoardBubble({ sender, color, text });
     });
 
     socket.on('player_poked', (data) => {
