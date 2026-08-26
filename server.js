@@ -307,6 +307,13 @@ function executeMove(room, color, tokenIndex, dice) {
     });
   }
 
+  // Check match completion
+  if (room.winners.length >= room.players.length - 1 && room.players.length > 1) {
+    room.gameStarted = false;
+    const winnerPlayer = room.players.find(p => p.color === room.winners[0]);
+    room.logs.push(`🏁 MATCH FINISHED! Winner: ${winnerPlayer ? winnerPlayer.name : room.winners[0]}`);
+  }
+
   advanceTurn(room, grantExtraTurn);
   io.to(room.code).emit('game_state_update', room);
 }

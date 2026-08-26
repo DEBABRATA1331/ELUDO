@@ -805,26 +805,112 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUI(currentRoomState);
   }
 
+  const COLOR_START_OFFLINE = { red: 0, green: 13, yellow: 26, blue: 39 };
+  const SAFE_TILES_OFFLINE = [0, 8, 13, 21, 26, 34, 39, 47];
+
+  function getGlobalTrackOffline(color, step) {
+    if (step < 1 || step > 51) return null;
+    return (COLOR_START_OFFLINE[color] + step - 1) % 52;
+  }
+
   function handleLocalRoll() {
+    if (!currentRoomState || !currentRoomState.gameStarted) return;
+    const currentPlayer = currentRoomState.players[currentRoomState.currentTurnIndex];
     const dice = Math.floor(Math.random() * 6) + 1;
     currentRoomState.diceValue = dice;
     currentRoomState.hasRolled = true;
-    currentRoomState.logs.push(`🎲 Rolled ${dice}`);
+
+    if (dice === 6) {
+      currentRoomState.consecutiveSixes = (currentRoomState.consecutiveSixes || 0) + 1;
+      if (currentRoomState.consecutiveSixes >= 3) {
+        currentRoomState.logs.push(`⚠️ ${currentPlayer.name} rolled 3 consecutive 6s! Turn forfeited.`);
+        advanceLocalTurn(false);
+        triggerRollAnimation(dice);
+        updateUI(currentRoomState);
+        return;
+      }
+    } else {
+      currentRoomState.consecutiveSixes = 0;
+    }
+
+    currentRoomState.logs.push(`🎲 ${currentPlayer.name} rolled ${dice}`);
     triggerRollAnimation(dice);
+
+    const validMoves = calculateValidMoves(currentRoomState, currentPlayer.color, dice);
+
+    if (validMoves.length === 0) {
+      currentRoomState.logs.push(`No valid moves for ${currentPlayer.name}`);
+      updateUI(currentRoomState);
+      setTimeout(() => {
+        advanceLocalTurn(false);
+        updateUI(currentRoomState);
+      }, 1400);
+      return;
+    }
+
+    const allInBase = validMoves.every(idx => currentRoomState.boardState[currentPlayer.color][idx] === 0);
+    if (validMoves.length === 1 || (allInBase && dice === 6)) {
+      handleLocalMove(currentPlayer.color, validMoves[0], dice);
+      return;
+    }
+
     updateUI(currentRoomState);
   }
 
   function handleLocalMove(color, tokenIndex, dice) {
     const currentStep = currentRoomState.boardState[color][tokenIndex];
-    let newStep = currentStep === 0 ? 1 : currentStep + dice;
-    if (newStep <= 57) {
-      currentRoomState.boardState[color][tokenIndex] = newStep;
+    let newStep = currentStep === 0 ? (dice === 6 ? 1 : 0) : currentStep + dice;
+    if (newStep === 0 || newStep > 57) return;
+
+    currentRoomState.boardState[color][tokenIndex] = newStep;
+    const player = currentRoomState.players.find(p => p.color === color);
+    let grantExtraTurn = (dice === 6);
+
+    // Reached Home
+    if (newStep === 57) {
+      grantExtraTurn = true;
+      currentRoomState.logs.push(`🎉 ${player ? player.name : color} reached HOME!`);
+      const allHome = currentRoomState.boardState[color].every(s => s === 57);
+      if (allHome && !currentRoomState.winners.includes(color)) {
+        currentRoomState.winners.push(color);
+      }
+    }
+
+    // Capture check
+    const newGlobal = getGlobalTrackOffline(color, newStep);
+    if (newGlobal !== null && !SAFE_TILES_OFFLINE.includes(newGlobal)) {
+      currentRoomState.players.forEach(opp => {
+        if (opp.color === color) return;
+        currentRoomState.boardState[opp.color].forEach((oppStep, oppIdx) => {
+          if (getGlobalTrackOffline(opp.color, oppStep) === newGlobal) {
+            currentRoomState.boardState[opp.color][oppIdx] = 0; // Send back to base!
+            grantExtraTurn = true;
+            currentRoomState.logs.push(`⚔️ ${player ? player.name : color} captured ${opp.name}'s token!`);
+          }
+        });
+      });
+    }
+
+    if (currentRoomState.winners.length >= currentRoomState.players.length - 1 && currentRoomState.players.length > 1) {
+      currentRoomState.gameStarted = false;
+    }
+
+    advanceLocalTurn(grantExtraTurn);
+    updateUI(currentRoomState);
+  }
+
+  function advanceLocalTurn(grantExtraTurn) {
+    if (grantExtraTurn) {
       currentRoomState.hasRolled = false;
       currentRoomState.diceValue = null;
-      currentRoomState.currentTurnIndex = (currentRoomState.currentTurnIndex + 1) % currentRoomState.players.length;
-      myColor = currentRoomState.players[currentRoomState.currentTurnIndex].color;
-      updateUI(currentRoomState);
+      return;
     }
+
+    currentRoomState.consecutiveSixes = 0;
+    currentRoomState.hasRolled = false;
+    currentRoomState.diceValue = null;
+    currentRoomState.currentTurnIndex = (currentRoomState.currentTurnIndex + 1) % currentRoomState.players.length;
+    myColor = currentRoomState.players[currentRoomState.currentTurnIndex].color;
   }
 
   if (socket) {
