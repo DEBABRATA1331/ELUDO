@@ -71,7 +71,10 @@
     <section class="board-column">
       
       <!-- REALISTIC PHYSICAL LUDO BOARD WRAPPER -->
-      <div class="board-card glass-panel">
+      <div class="board-card glass-panel" style="position: relative;">
+        <!-- Animated Board Poke Container -->
+        <div id="boardPokeOverlay" class="board-poke-overlay"></div>
+
         <div id="ludoBoard" class="ludo-board realistic-wood-frame">
           <!-- Grid cells (15x15) and tokens injected by JavaScript -->
         </div>
@@ -131,7 +134,7 @@
         </div>
         
         <div id="playersList" class="players-list">
-          <!-- Player Cards & Color Selectors injected by JS -->
+          <!-- Player Cards, Avatar badges, Host controls & Pokes injected by JS -->
         </div>
       </div>
 
@@ -160,6 +163,7 @@
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span>Live Chat</span>
+            <span id="chatBadge" class="unread-badge hidden">0</span>
           </button>
         </div>
 
@@ -177,9 +181,19 @@
             <div id="webhookFeedContainer" class="log-stream code-font"></div>
           </div>
 
-          <!-- Tab 3: Chat Box -->
+          <!-- Tab 3: Chat Box (Clean Chat Stream with Quick Taunts & Shortcuts) -->
           <div id="chatBox" class="tab-pane">
             <div id="chatMessages" class="chat-messages"></div>
+            
+            <!-- Quick Taunts & Shortcut Comments -->
+            <div class="quick-taunts-bar">
+              <button type="button" class="taunt-btn" data-msg="Good Luck! 🍀">🍀 Luck</button>
+              <button type="button" class="taunt-btn" data-msg="Hurry Up! ⏰">⏰ Hurry</button>
+              <button type="button" class="taunt-btn" data-msg="Oops! 😅">😅 Oops</button>
+              <button type="button" class="taunt-btn" data-msg="Nice Move! 🔥">🔥 Nice</button>
+              <button type="button" class="taunt-btn" data-msg="GG WP 🏆">🏆 GG</button>
+            </div>
+
             <form id="chatForm" class="chat-form">
               <input type="text" id="chatInput" placeholder="Type a message..." maxlength="150" autocomplete="off">
               <button type="submit" class="btn btn-primary">Send</button>
@@ -192,7 +206,7 @@
 
   </main>
 
-  <!-- LOBBY OVERLAY MODAL (Join / Create Room & Preferred Home Base) -->
+  <!-- LOBBY OVERLAY MODAL (Join / Create Room & Avatar Selector) -->
   <div id="lobbyModal" class="modal-backdrop">
     <div class="modal-box glass-panel modal-lg">
       <div class="modal-hero">
@@ -206,7 +220,7 @@
           </svg>
         </div>
         <h2>Online Real-Time Ludo</h2>
-        <p>Choose your home base color, play with friends in real-time, and trigger live Webhooks!</p>
+        <p>Choose your avatar & home base color, play with friends in real-time, and trigger live Webhooks!</p>
       </div>
 
       <div class="lobby-tabs">
@@ -219,6 +233,20 @@
         <div class="form-group">
           <label for="createPlayerName">Your Nickname</label>
           <input type="text" id="createPlayerName" placeholder="e.g. MasterLudo" required maxlength="15">
+        </div>
+
+        <div class="form-group">
+          <label>Choose Your Avatar:</label>
+          <div class="avatar-picker-grid" id="createAvatarGrid">
+            <label class="avatar-chip active"><input type="radio" name="createAvatar" value="🦊" checked> 🦊 Fox</label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🦁"> 🦁 Lion</label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="👑"> 👑 Crown</label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🐲"> 🐲 Dragon</label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="⚡"> ⚡ Bolt</label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🚀"> 🚀 Rocket</label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🤖"> 🤖 Bot</label>
+            <label class="avatar-chip"><input type="radio" name="createAvatar" value="🎯"> 🎯 Target</label>
+          </div>
         </div>
 
         <div class="form-group">
@@ -251,6 +279,20 @@
         <div class="form-group">
           <label for="joinRoomCode">Room Code</label>
           <input type="text" id="joinRoomCode" placeholder="6-digit code e.g. ABC123" required maxlength="6" style="text-transform: uppercase;">
+        </div>
+
+        <div class="form-group">
+          <label>Choose Your Avatar:</label>
+          <div class="avatar-picker-grid" id="joinAvatarGrid">
+            <label class="avatar-chip active"><input type="radio" name="joinAvatar" value="🦁" checked> 🦁 Lion</label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🦊"> 🦊 Fox</label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="👑"> 👑 Crown</label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🐲"> 🐲 Dragon</label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="⚡"> ⚡ Bolt</label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🚀"> 🚀 Rocket</label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🤖"> 🤖 Bot</label>
+            <label class="avatar-chip"><input type="radio" name="joinAvatar" value="🎯"> 🎯 Target</label>
+          </div>
         </div>
 
         <div class="form-group">
@@ -371,6 +413,7 @@
         </svg>
       </span>
       <span class="nav-label">Chat & Logs</span>
+      <span id="mobileChatBadge" class="unread-badge hidden">0</span>
     </button>
   </nav>
 

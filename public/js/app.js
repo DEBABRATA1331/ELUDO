@@ -1,6 +1,6 @@
 /**
  * LUDO REAL-TIME FRONTEND APPLICATION SCRIPT
- * Manages Socket.io events, DOM Board Rendering, Tap-to-Roll 3D Dice Animations & Smooth Step Movements
+ * Manages Socket.io events, DOM Board Rendering, Avatars, Host Controls, Quick Taunts & Board Poke Animations
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,9 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let myColor = null;
   let currentRoomState = null;
   let isMuted = false;
+  let unreadChatCount = 0;
 
   // DOM Elements
   const ludoBoard = document.getElementById('ludoBoard');
+  const boardPokeOverlay = document.getElementById('boardPokeOverlay');
   const lobbyModal = document.getElementById('lobbyModal');
   const createRoomForm = document.getElementById('createRoomForm');
   const joinRoomForm = document.getElementById('joinRoomForm');
@@ -71,6 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatMessages = document.getElementById('chatMessages');
   const chatForm = document.getElementById('chatForm');
   const chatInput = document.getElementById('chatInput');
+  const chatBadge = document.getElementById('chatBadge');
+  const mobileChatBadge = document.getElementById('mobileChatBadge');
 
   // Webhook Modal Elements
   const openWebhookBtn = document.getElementById('openWebhookBtn');
@@ -130,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function createBaseYard(color, row, col) {
     const baseCell = document.createElement('div');
     baseCell.className = `cell cell-base ${color}-base`;
+    baseCell.id = `yard_${color}`;
     baseCell.style.gridRow = `${row + 1} / span 6`;
     baseCell.style.gridColumn = `${col + 1} / span 6`;
 
@@ -245,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
               e.stopPropagation();
               SoundFX.playMove();
               if (isOfflineMode) {
-                // Local move logic for offline
                 handleLocalMove(myColor, tokenIndex, roomState.diceValue);
               } else {
                 socket.emit('move_token', { roomCode: myRoomCode, tokenIndex });
@@ -287,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // RENDER UI PANELS
+  // RENDER UI PANELS, AVATARS & HOST CONTROLS
   // ==========================================================================
 
   function updateUI(roomState) {
@@ -318,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       turnBanner.className = `turn-banner color-${currentPlayer.color}`;
       const isMyTurn = (currentPlayer.color === myColor);
-      turnText.innerText = isMyTurn ? `YOUR TURN (${currentPlayer.color.toUpperCase()})` : `${currentPlayer.name}'s Turn (${currentPlayer.color.toUpperCase()})`;
+      turnText.innerText = isMyTurn ? `${currentPlayer.avatar || '🦊'} YOUR TURN (${currentPlayer.color.toUpperCase()})` : `${currentPlayer.avatar || '🦊'} ${currentPlayer.name}'s Turn (${currentPlayer.color.toUpperCase()})`;
 
       if (isMyTurn && !roomState.hasRolled) {
         diceHintText.innerText = '👉 Tap Dice to Roll!';
@@ -356,45 +360,72 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPlayersList(roomState) {
     playersList.innerHTML = '';
 
-    const isHost = roomState.players.find(p => p.socketId === socket?.id || p.id === 'p1')?.isHost;
     const me = roomState.players.find(p => p.socketId === socket?.id || p.id === 'p1');
+    const amIHost = me ? me.isHost : false;
+    const amICoHost = me ? me.isCoHost : false;
 
     roomState.players.forEach(p => {
       const card = document.createElement('div');
       const isTurn = roomState.gameStarted && roomState.players[roomState.currentTurnIndex]?.color === p.color;
       card.className = `player-card ${isTurn ? 'active-turn' : ''}`;
 
-      const homeTokens = roomState.boardState[p.color] ? roomState.boardState[p.color].filter(s => s === 57).length : 0;
       const isMe = (p.socketId === socket?.id || p.id === 'p1');
 
       card.innerHTML = `
         <div class="player-info">
+          <span class="player-avatar">${p.avatar || '🦊'}</span>
           <span class="color-dot ${p.color}" title="Home Base: ${p.color.toUpperCase()}"></span>
           <span class="player-name">${p.name} ${isMe ? '(You)' : ''}</span>
           <div class="player-tags">
             ${p.isHost ? '<span class="tag tag-host">HOST</span>' : ''}
+            ${p.isCoHost ? '<span class="tag tag-cohost">CO-HOST</span>' : ''}
             ${p.isBot ? '<span class="tag tag-bot">BOT</span>' : ''}
           </div>
         </div>
-        <div class="player-progress">
-          ${!roomState.gameStarted && isMe ? `
-            <select class="color-select-dropdown" data-player="${p.socketId}">
-              <option value="red" ${p.color === 'red' ? 'selected' : ''}>Red Base</option>
-              <option value="green" ${p.color === 'green' ? 'selected' : ''}>Green Base</option>
-              <option value="yellow" ${p.color === 'yellow' ? 'selected' : ''}>Yellow Base</option>
-              <option value="blue" ${p.color === 'blue' ? 'selected' : ''}>Blue Base</option>
+        <div class="player-actions-row">
+          ${!isMe ? `
+            <button class="btn-poke" data-color="${p.color}" title="Poke ${p.name}!">
+              👉 Poke
+            </button>
+          ` : ''}
+          ${amIHost && !isMe && !p.isBot ? `
+            <select class="host-action-dropdown" data-socket="${p.socketId}">
+              <option value="">⚙️ Manage</option>
+              <option value="transfer">👑 Make Host</option>
+              <option value="cohost">${p.isCoHost ? '❌ Remove Co-Host' : '🎖️ Make Co-Host'}</option>
             </select>
-          ` : `<span>🏠 ${homeTokens}/4 Home</span>`}
+          ` : ''}
         </div>
       `;
 
-      const colorSelect = card.querySelector('.color-select-dropdown');
-      if (colorSelect) {
-        colorSelect.addEventListener('change', (e) => {
+      // Poke Button Listener
+      const pokeBtn = card.querySelector('.btn-poke');
+      if (pokeBtn) {
+        pokeBtn.addEventListener('click', () => {
           SoundFX.playClick();
-          const selectedColor = e.target.value;
-          myColor = selectedColor;
-          if (socket) socket.emit('select_color', { roomCode: myRoomCode, color: selectedColor });
+          const targetColor = pokeBtn.dataset.color;
+          if (socket && !isOfflineMode) {
+            socket.emit('send_poke', { roomCode: myRoomCode, targetColor, pokeType: 'punch' });
+          } else {
+            triggerBoardPokeAnimation({ senderName: me?.name || 'Player', senderColor: myColor, targetColor, pokeType: 'punch' });
+          }
+        });
+      }
+
+      // Host Manage Dropdown Listener
+      const hostSelect = card.querySelector('.host-action-dropdown');
+      if (hostSelect) {
+        hostSelect.addEventListener('change', (e) => {
+          const action = e.target.value;
+          const targetSocket = hostSelect.dataset.socket;
+          if (action === 'transfer') {
+            if (confirm(`Transfer Host privileges to ${p.name}?`)) {
+              socket.emit('transfer_host', { roomCode: myRoomCode, targetSocketId: targetSocket });
+            }
+          } else if (action === 'cohost') {
+            socket.emit('toggle_cohost', { roomCode: myRoomCode, targetSocketId: targetSocket });
+          }
+          hostSelect.value = '';
         });
       }
 
@@ -402,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (roomState.players.length < 4 && !roomState.gameStarted) {
-      if (isHost) {
+      if (amIHost || amICoHost) {
         const addBotBtn = document.createElement('button');
         addBotBtn.className = 'btn btn-secondary btn-block empty-slot';
         addBotBtn.innerHTML = '+ Add AI Bot';
@@ -414,7 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (me && me.isHost && !roomState.gameStarted) {
+    // Strictly enforce ONLY Host / Co-Host can start match
+    if (me && (me.isHost || me.isCoHost) && !roomState.gameStarted) {
       startGameBtn.classList.remove('hidden');
     } else {
       startGameBtn.classList.add('hidden');
@@ -460,7 +492,43 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // EVENT LISTENERS (TAP DICE TO ROLL)
+  // POKE BOARD ANIMATIONS
+  // ==========================================================================
+
+  function triggerBoardPokeAnimation({ senderName, senderColor, targetColor, pokeType }) {
+    SoundFX.playPoke();
+
+    const pokes = {
+      punch: '🥊',
+      tomato: '🍅',
+      lightning: '⚡',
+      bomb: '💣',
+      water: '💦'
+    };
+
+    const emoji = pokes[pokeType] || '🥊';
+    const pokeEl = document.createElement('div');
+    pokeEl.className = 'flying-poke-item';
+    pokeEl.innerText = emoji;
+
+    // Position targets based on home bases (red top-left, green top-right, yellow bottom-right, blue bottom-left)
+    const posMap = {
+      red: { top: '25%', left: '25%' },
+      green: { top: '25%', left: '75%' },
+      yellow: { top: '75%', left: '75%' },
+      blue: { top: '75%', left: '25%' }
+    };
+
+    const targetPos = posMap[targetColor] || { top: '50%', left: '50%' };
+    pokeEl.style.top = targetPos.top;
+    pokeEl.style.left = targetPos.left;
+
+    boardPokeOverlay.appendChild(pokeEl);
+    setTimeout(() => pokeEl.remove(), 1400);
+  }
+
+  // ==========================================================================
+  // EVENT LISTENERS (TAP DICE, AVATARS, CHAT TAUNTS)
   // ==========================================================================
 
   // TAP DIRECTLY ON 3D DICE CUBE TO ROLL
@@ -520,6 +588,15 @@ document.addEventListener('DOMContentLoaded', () => {
     createRoomForm.classList.remove('active');
   });
 
+  // Avatar Selection Listeners
+  document.querySelectorAll('.avatar-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const parent = chip.parentElement;
+      parent.querySelectorAll('.avatar-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+
   // Color chip selection in Create / Join form
   document.querySelectorAll('.color-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -535,10 +612,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerName = document.getElementById('createPlayerName').value.trim();
     const webhookUrl = document.getElementById('createWebhookUrl').value.trim();
     const preferredColor = createRoomForm.querySelector('input[name="createColor"]:checked')?.value || 'red';
+    const avatar = createRoomForm.querySelector('input[name="createAvatar"]:checked')?.value || '🦊';
 
     localStorage.setItem('ludo_player_name', playerName);
     if (socket && !isOfflineMode) {
-      socket.emit('create_room', { playerId: myPlayerId, playerName, webhookUrl, preferredColor });
+      socket.emit('create_room', { playerId: myPlayerId, playerName, webhookUrl, preferredColor, avatar });
     } else {
       enableOfflineFallbackMode();
     }
@@ -550,10 +628,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerName = document.getElementById('joinPlayerName').value.trim();
     const roomCode = document.getElementById('joinRoomCode').value.trim().toUpperCase();
     const preferredColor = joinRoomForm.querySelector('input[name="joinColor"]:checked')?.value || 'green';
+    const avatar = joinRoomForm.querySelector('input[name="joinAvatar"]:checked')?.value || '🦁';
 
     localStorage.setItem('ludo_player_name', playerName);
     if (socket && !isOfflineMode) {
-      socket.emit('join_room', { roomCode, playerId: myPlayerId, playerName, preferredColor });
+      socket.emit('join_room', { roomCode, playerId: myPlayerId, playerName, preferredColor, avatar });
     } else {
       enableOfflineFallbackMode();
     }
@@ -613,6 +692,17 @@ document.addEventListener('DOMContentLoaded', () => {
     webhookModal.classList.add('hidden');
   });
 
+  // Quick Taunt Chips Click Listeners
+  document.querySelectorAll('.taunt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      SoundFX.playClick();
+      const msg = btn.dataset.msg;
+      if (msg && myRoomCode && socket && !isOfflineMode) {
+        socket.emit('send_chat', { roomCode: myRoomCode, message: msg });
+      }
+    });
+  });
+
   // Live Chat Submit
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -633,6 +723,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const view = btn.dataset.view;
       gameContainer.className = `game-container view-${view}`;
+
+      if (view === 'chat') {
+        unreadChatCount = 0;
+        chatBadge.innerText = '0';
+        chatBadge.classList.add('hidden');
+        mobileChatBadge.innerText = '0';
+        mobileChatBadge.classList.add('hidden');
+      }
     });
   });
 
@@ -640,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gameContainer.classList.add('view-board');
   }
 
-  // Sidebar Tab Switching
+  // Sidebar Tab Switching & Unread Counter Reset
   document.querySelectorAll('.panel-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.panel-tabs .tab-btn').forEach(b => b.classList.remove('active'));
@@ -649,6 +747,14 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
       const targetId = btn.dataset.tab;
       document.getElementById(targetId).classList.add('active');
+
+      if (targetId === 'chatBox') {
+        unreadChatCount = 0;
+        chatBadge.innerText = '0';
+        chatBadge.classList.add('hidden');
+        mobileChatBadge.innerText = '0';
+        mobileChatBadge.classList.add('hidden');
+      }
     });
   });
 
@@ -672,8 +778,8 @@ document.addEventListener('DOMContentLoaded', () => {
     currentRoomState = {
       code: 'OFFLINE',
       players: [
-        { id: 'p1', socketId: 'p1', name: 'Player 1', color: 'red', isHost: true, isBot: false, connected: true },
-        { id: 'p2', socketId: 'p2', name: 'Player 2', color: 'yellow', isHost: false, isBot: false, connected: true }
+        { id: 'p1', socketId: 'p1', name: 'Player 1', color: 'red', avatar: '🦊', isHost: true, isBot: false, connected: true },
+        { id: 'p2', socketId: 'p2', name: 'Player 2', color: 'yellow', avatar: '🦁', isHost: false, isBot: false, connected: true }
       ],
       gameStarted: true,
       currentTurnIndex: 0,
@@ -786,6 +892,20 @@ document.addEventListener('DOMContentLoaded', () => {
       msgEl.innerHTML = `<span class="sender" style="color: var(--color-${color})">${sender}:</span> <span>${text}</span>`;
       chatMessages.appendChild(msgEl);
       chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      // Update Unread Counter if Chat tab is not active
+      const isChatTabActive = document.getElementById('chatBox').classList.contains('active');
+      if (!isChatTabActive) {
+        unreadChatCount++;
+        chatBadge.innerText = unreadChatCount;
+        chatBadge.classList.remove('hidden');
+        mobileChatBadge.innerText = unreadChatCount;
+        mobileChatBadge.classList.remove('hidden');
+      }
+    });
+
+    socket.on('player_poked', (data) => {
+      triggerBoardPokeAnimation(data);
     });
 
     socket.on('error_message', (msg) => {

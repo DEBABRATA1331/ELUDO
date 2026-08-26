@@ -148,7 +148,7 @@ body {
 }
 
 /* ==========================================================================
-   REALISTIC PHYSICAL LUDO BOARD GRID (15x15)
+   REALISTIC PHYSICAL LUDO BOARD GRID (15x15) & POKE OVERLAY
    ========================================================================== */
 
 .board-column {
@@ -162,6 +162,28 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.board-poke-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.flying-poke-item {
+  position: absolute;
+  font-size: 36px;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6));
+  animation: flyPokeAnim 1.4s cubic-bezier(0.2, 0.8, 0.3, 1.2) forwards;
+}
+
+@keyframes flyPokeAnim {
+  0% { transform: scale(0.4) translate(-50%, -50%); opacity: 0; }
+  30% { opacity: 1; transform: scale(1.4) translate(-50%, -50%); }
+  80% { opacity: 1; transform: scale(1.1) translate(-50%, -50%); }
+  100% { transform: scale(0.2) translate(-50%, -50%); opacity: 0; }
 }
 
 .ludo-board.realistic-wood-frame {
@@ -520,7 +542,7 @@ body {
 }
 
 /* ==========================================================================
-   SIDEBAR PANELS & HOME BASE COLOR PICKER
+   SIDEBAR PANELS, AVATARS & HOST CONTROLS
    ========================================================================== */
 
 .sidebar-column {
@@ -565,6 +587,7 @@ body {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-glass);
   transition: transform 0.2s ease, border-color 0.2s ease;
+  gap: 8px;
 }
 
 .player-card.active-turn {
@@ -577,12 +600,31 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-avatar {
+  font-size: 18px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .color-dot {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .color-dot.red { background: var(--color-red); box-shadow: 0 0 6px var(--color-red); }
@@ -590,15 +632,65 @@ body {
 .color-dot.yellow { background: var(--color-yellow); box-shadow: 0 0 6px var(--color-yellow); }
 .color-dot.blue { background: var(--color-blue); box-shadow: 0 0 6px var(--color-blue); }
 
-.color-select-dropdown {
-  background: rgba(0,0,0,0.4);
+.player-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-poke {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fde047;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 3px 6px;
+  font-size: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-poke:hover {
+  transform: scale(1.05);
+  background: rgba(245, 158, 11, 0.35);
+}
+
+.host-action-dropdown {
+  background: rgba(15, 23, 42, 0.9);
   color: white;
   border: 1px solid var(--border-glass);
   border-radius: 6px;
-  padding: 4px 6px;
+  padding: 3px 6px;
   font-size: 11px;
   cursor: pointer;
 }
+
+/* AVATAR PICKER GRID */
+.avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.avatar-chip {
+  padding: 6px 4px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.avatar-chip.active {
+  border-color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.2);
+  transform: scale(1.05);
+}
+
+.avatar-chip input { display: none; }
 
 .color-picker-grid {
   display: grid;
@@ -630,24 +722,20 @@ body {
 
 .color-chip input { display: none; }
 
-.player-name {
-  font-weight: 600;
-  font-size: 13px;
-}
-
 .player-tags {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .tag {
   font-size: 10px;
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 4px;
   font-weight: 700;
 }
 
 .tag-host { background: rgba(245, 158, 11, 0.2); color: #fde047; }
+.tag-cohost { background: rgba(6, 182, 212, 0.2); color: #67e8f9; }
 .tag-bot { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
 
 .empty-slot {
@@ -657,7 +745,10 @@ body {
   padding: 10px;
 }
 
-/* Logs & Chat Tabs */
+/* ==========================================================================
+   LOGS, CLEAN CHAT & QUICK TAUNT SHORTCUTS
+   ========================================================================== */
+
 .logs-panel {
   flex: 1;
   min-height: 260px;
@@ -668,6 +759,7 @@ body {
   gap: 6px;
   border-bottom: 1px solid var(--border-glass);
   padding-bottom: 6px;
+  position: relative;
 }
 
 .tab-btn {
@@ -683,11 +775,22 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
 }
 
 .tab-btn.active {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-main);
+}
+
+.unread-badge {
+  background: var(--color-red);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 1px 5px;
+  line-height: 1;
 }
 
 .tab-content {
@@ -736,12 +839,15 @@ body {
   flex-direction: column;
   gap: 6px;
   padding: 6px;
-  max-height: 160px;
+  max-height: 130px;
 }
 
 .chat-msg {
   font-size: 12px;
   line-height: 1.4;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 
 .chat-msg .sender {
@@ -749,10 +855,35 @@ body {
   margin-right: 4px;
 }
 
+.quick-taunts-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+.taunt-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.taunt-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
 .chat-form {
   display: flex;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .chat-form input {
@@ -946,6 +1077,7 @@ body, .ludo-board, .token, .dice-cube, .btn {
   padding: 6px 0;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .mobile-nav-btn.active {

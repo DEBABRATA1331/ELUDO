@@ -107,7 +107,7 @@ function getValidMoves(room, color, dice) {
 }
 
 // Initialize room state
-function createRoomState(code, hostName, webhookUrl = '') {
+function createRoomState(code, hostName, webhookUrl = '', avatar = '🦊') {
   return {
     code,
     players: [
@@ -116,7 +116,9 @@ function createRoomState(code, hostName, webhookUrl = '') {
         socketId: null,
         name: hostName || 'Host',
         color: 'red',
+        avatar: avatar || '🦊',
         isHost: true,
+        isCoHost: false,
         isBot: false,
         connected: true
       }
@@ -320,9 +322,9 @@ io.on('connection', (socket) => {
   console.log(`[Socket Connected] ID: ${socket.id}`);
 
   // 1. Create Room
-  socket.on('create_room', ({ playerId, playerName, webhookUrl, preferredColor }) => {
+  socket.on('create_room', ({ playerId, playerName, webhookUrl, preferredColor, avatar }) => {
     const code = generateRoomCode();
-    const room = createRoomState(code, playerName, webhookUrl);
+    const room = createRoomState(code, playerName, webhookUrl, avatar || '🦊');
     
     room.players[0].playerId = playerId || socket.id;
     room.players[0].socketId = socket.id;
@@ -334,11 +336,11 @@ io.on('connection', (socket) => {
     socket.join(code);
 
     socket.emit('room_created', { roomCode: code, playerColor: room.players[0].color, roomState: room });
-    console.log(`[Room Created] Code: ${code}, Host: ${playerName}, PlayerID: ${room.players[0].playerId}`);
+    console.log(`[Room Created] Code: ${code}, Host: ${playerName}, Avatar: ${avatar || '🦊'}`);
   });
 
   // 2. Join Room / Re-bind existing player
-  socket.on('join_room', ({ roomCode, playerId, playerName, preferredColor }) => {
+  socket.on('join_room', ({ roomCode, playerId, playerName, preferredColor, avatar }) => {
     const code = roomCode.trim().toUpperCase();
     const room = rooms[code];
 
@@ -352,6 +354,7 @@ io.on('connection', (socket) => {
       existingPlayer.socketId = socket.id;
       existingPlayer.connected = true;
       if (playerName) existingPlayer.name = playerName;
+      if (avatar) existingPlayer.avatar = avatar;
       socket.join(code);
 
       room.logs.push(`⚡ ${existingPlayer.name} reconnected`);
@@ -376,17 +379,88 @@ io.on('connection', (socket) => {
       socketId: socket.id,
       name: playerName || `Player ${room.players.length + 1}`,
       color: assignedColor,
+      avatar: avatar || '🦁',
       isHost: false,
+      isCoHost: false,
       isBot: false,
       connected: true
     };
 
     room.players.push(newPlayer);
-    room.logs.push(`${newPlayer.name} joined as ${assignedColor.toUpperCase()}`);
+    room.logs.push(`${newPlayer.avatar} ${newPlayer.name} joined as ${assignedColor.toUpperCase()}`);
     socket.join(code);
 
     socket.emit('room_joined', { roomCode: code, playerColor: assignedColor, roomState: room });
     io.to(code).emit('game_state_update', room);
+  });
+
+  // Transfer Host Privileges
+  socket.on('transfer_host', ({ roomCode, targetSocketId }) => {
+    const room = rooms[roomCode];
+    if (!room) return;
+
+    const me = room.players.find(p => p.socketId === socket.id);
+    if (!me || !me.isHost) {
+      return socket.emit('error_message', 'Only the Host can transfer host privileges!');
+    }
+
+    const target = room.players.find(p => p.socketId === targetSocketId || p.id === targetSocketId);
+    if (target && !target.isBot) {
+      me.isHost = false;
+      target.isHost = true;
+      target.isCoHost = false;
+      room.logs.push(`👑 Host privileges transferred from ${me.name} to ${target.name}`);
+      io.to(roomCode).emit('game_state_update', room);
+    }
+  });
+
+  // Toggle Co-Host Status
+  socket.on('toggle_cohost', ({ roomCode, targetSocketId }) => {
+    const room = rooms[roomCode];
+    if (!room) return;
+
+    const me = room.players.find(p => p.socketId === socket.id);
+    if (!me || !me.isHost) {
+      return socket.emit('error_message', 'Only the Host can assign Co-Hosts!');
+    }
+
+    const target = room.players.find(p => p.socketId === targetSocketId || p.id === targetSocketId);
+    if (target && !target.isHost && !target.isBot) {
+      target.isCoHost = !target.isCoHost;
+      room.logs.push(`🎖️ ${target.name} is now ${target.isCoHost ? 'a Co-Host' : 'a Regular Player'}`);
+      io.to(roomCode).emit('game_state_update', room);
+    }
+  });
+
+  // Send Poke Event (Animation on Board)
+  socket.on('send_poke', ({ roomCode, targetColor, pokeType }) => {
+    const room = rooms[roomCode];
+    if (!room) return;
+
+    const sender = room.players.find(p => p.socketId === socket.id);
+    if (!sender) return;
+
+    const target = room.players.find(p => p.color === targetColor);
+    if (!target) return;
+
+    const pokeMap = {
+      punch: '🥊 Punch',
+      tomato: '🍅 Tomato',
+      lightning: '⚡ Lightning',
+      bomb: '💣 Bomb',
+      water: '💦 Water Splash'
+    };
+
+    const pokeText = pokeMap[pokeType] || '👉 Poke';
+    room.logs.push(`😜 ${sender.name} poked ${target.name} with ${pokeText}!`);
+
+    io.to(roomCode).emit('player_poked', {
+      senderName: sender.name,
+      senderColor: sender.color,
+      targetColor: target.color,
+      targetName: target.name,
+      pokeType: pokeType || 'punch'
+    });
   });
 
   // 3. Dedicated Rejoin Handshake (Page Reload / Network Drop)

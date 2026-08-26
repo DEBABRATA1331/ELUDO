@@ -92,6 +92,12 @@ const SoundFX = (function () {
       fanfare.forEach((n, idx) => {
         setTimeout(() => playTone(n.f, 'triangle', n.d, 0.25), idx * 150);
       });
+    },
+    playPoke: function () {
+      if (muted) return;
+      initCtx();
+      playTone(800, 'square', 0.08, 0.2);
+      setTimeout(() => playTone(1200, 'triangle', 0.12, 0.2), 60);
     }
   };
 })();
