@@ -968,27 +968,89 @@ body, .ludo-board, .token, .dice-cube, .btn {
   }
 
   .app-header {
-    padding: 10px 14px;
-    flex-wrap: wrap;
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: stretch;
     gap: 8px;
   }
 
-  .brand h1 { font-size: 18px; }
-  .badge-tag { display: none; }
+  .brand {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+  }
+
+  .badge-tag {
+    display: none;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 4px 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-glass);
+  }
+
+  .status-indicator {
+    font-size: 11px;
+  }
+
+  .status-text {
+    max-width: 75px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  #openWebhookBtn span {
+    display: none; /* Hide label text on mobile, keep bolt icon */
+  }
+
+  .room-code-badge {
+    padding: 3px 8px;
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .room-code-badge span:first-child {
+    font-size: 11px;
+  }
+
+  .room-code-badge strong {
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  #copyInviteLinkBtn span {
+    display: none; /* Hide 'Copy Link' text on mobile, keep icon */
+  }
 
   .game-container {
-    padding: 10px;
-    gap: 14px;
+    padding: 8px;
+    gap: 12px;
     grid-template-columns: 1fr;
   }
 
   .board-card {
-    padding: 6px;
+    padding: 4px;
   }
 
   .ludo-board.realistic-wood-frame {
     max-width: 96vw;
-    border-width: 8px;
+    border-width: 6px;
     border-radius: 8px;
   }
 
@@ -996,22 +1058,26 @@ body, .ludo-board, .token, .dice-cube, .btn {
     font-size: 9px;
   }
 
+  .dice-action-area {
+    gap: 10px;
+  }
+
   .dice-cube {
-    width: 54px;
-    height: 54px;
+    width: 50px;
+    height: 50px;
   }
 
   .dice-face {
-    width: 54px;
-    height: 54px;
+    width: 50px;
+    height: 50px;
   }
 
-  .face-1 { transform: translateZ(27px); }
-  .face-2 { transform: rotateY(180deg) translateZ(27px); }
-  .face-3 { transform: rotateY(-90deg) translateZ(27px); }
-  .face-4 { transform: rotateY(90deg) translateZ(27px); }
-  .face-5 { transform: rotateX(90deg) translateZ(27px); }
-  .face-6 { transform: rotateX(-90deg) translateZ(27px); }
+  .face-1 { transform: translateZ(25px); }
+  .face-2 { transform: rotateY(180deg) translateZ(25px); }
+  .face-3 { transform: rotateY(-90deg) translateZ(25px); }
+  .face-4 { transform: rotateY(90deg) translateZ(25px); }
+  .face-5 { transform: rotateX(90deg) translateZ(25px); }
+  .face-6 { transform: rotateX(-90deg) translateZ(25px); }
 
   .mobile-bottom-nav {
     display: flex;
@@ -1029,7 +1095,7 @@ body, .ludo-board, .token, .dice-cube, .btn {
   .game-container.view-chat .sidebar-column .panel-card:nth-child(1) { display: none; }
 
   .modal-box {
-    padding: 20px;
-    max-width: 92vw;
+    padding: 18px;
+    max-width: 94vw;
   }
 }
