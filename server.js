@@ -408,6 +408,30 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Leave / Cancel Match Handler
+  socket.on('leave_room', ({ roomCode }) => {
+    const code = roomCode ? roomCode.trim().toUpperCase() : '';
+    const room = rooms[code];
+    if (!room) return;
+
+    const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
+    if (playerIndex !== -1) {
+      const leavingPlayer = room.players.splice(playerIndex, 1)[0];
+      socket.leave(code);
+      room.logs.push(`🚪 ${leavingPlayer.name} left the match`);
+
+      if (room.players.length === 0) {
+        delete rooms[code];
+      } else {
+        if (leavingPlayer.isHost) {
+          const nextHost = room.players.find(p => p.connected && !p.isBot);
+          if (nextHost) nextHost.isHost = true;
+        }
+        io.to(code).emit('game_state_update', room);
+      }
+    }
+  });
+
   // Select / Change Color in Lobby
   socket.on('select_color', ({ roomCode, color }) => {
     const room = rooms[roomCode];

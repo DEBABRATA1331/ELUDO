@@ -474,6 +474,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const cancelMatchBtn = document.getElementById('cancelMatchBtn');
+
+  // Cancel Match / Return Home
+  cancelMatchBtn.addEventListener('click', () => {
+    if (confirm('Cancel this match and return to home to start fresh?')) {
+      SoundFX.playClick();
+      if (socket && myRoomCode && myRoomCode !== 'OFFLINE') {
+        socket.emit('leave_room', { roomCode: myRoomCode });
+      }
+      myRoomCode = null;
+      localStorage.removeItem('ludo_room_code');
+      currentRoomState = null;
+      roomCodeDisplayContainer.classList.add('hidden');
+      document.querySelectorAll('.token').forEach(el => el.remove());
+      lobbyModal.classList.remove('hidden');
+    }
+  });
+
   // Start Game Button
   startGameBtn.addEventListener('click', () => {
     SoundFX.playClick();
