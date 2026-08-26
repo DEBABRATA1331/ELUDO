@@ -992,45 +992,82 @@ body, .ludo-board, .token, .dice-cube, .btn {
   }
 
   .game-container {
-    padding: 6px;
-    gap: 10px;
+    padding: 4px 6px;
+    gap: 8px;
     grid-template-columns: 1fr;
   }
 
   .board-card {
-    padding: 4px;
+    padding: 2px;
   }
 
   .ludo-board.realistic-wood-frame {
-    max-width: 96vw;
-    border-width: 6px;
+    max-width: 84vw;
+    max-height: 50vh;
+    border-width: 5px;
     border-radius: 8px;
   }
 
   .token {
-    font-size: 9px;
+    font-size: 8px;
+  }
+
+  .controls-card {
+    padding: 6px 10px;
+  }
+
+  .turn-banner {
+    padding: 4px 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    border-radius: 6px;
   }
 
   .dice-action-area {
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .dice-wrapper {
+    gap: 2px;
+  }
+
+  .dice-hint {
+    font-size: 9px;
   }
 
   .dice-cube {
-    width: 52px;
-    height: 52px;
+    width: 42px;
+    height: 42px;
   }
 
   .dice-face {
-    width: 52px;
-    height: 52px;
+    width: 42px;
+    height: 42px;
+    padding: 4px;
+    border-radius: 10px;
   }
 
-  .face-1 { transform: translateZ(26px); }
-  .face-2 { transform: rotateY(180deg) translateZ(26px); }
-  .face-3 { transform: rotateY(-90deg) translateZ(26px); }
-  .face-4 { transform: rotateY(90deg) translateZ(26px); }
-  .face-5 { transform: rotateX(90deg) translateZ(26px); }
-  .face-6 { transform: rotateX(-90deg) translateZ(26px); }
+  .dice-face span {
+    width: 8px;
+    height: 8px;
+  }
+
+  .face-1 { transform: translateZ(21px); }
+  .face-1 span { width: 10px; height: 10px; }
+
+  .face-2 { transform: rotateY(180deg) translateZ(21px); }
+  .face-3 { transform: rotateY(-90deg) translateZ(21px); }
+  .face-4 { transform: rotateY(90deg) translateZ(21px); }
+  .face-5 { transform: rotateX(90deg) translateZ(21px); }
+  .face-6 { transform: rotateX(-90deg) translateZ(21px); }
+
+  .dice-result-badge {
+    font-size: 11px;
+  }
+
+  .dice-result-badge strong {
+    font-size: 15px;
+  }
 
   .mobile-bottom-nav {
     display: flex;
