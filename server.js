@@ -93,12 +93,18 @@ function getValidMoves(room, color, dice) {
   tokens.forEach((step, index) => {
     if (step === 57) return; // Already in Home center
     if (step === 0) {
-      // Token in base requires 6 to enter
-      if (dice === 6) validIndices.push(index);
+      // Token in base requires 6 to enter start tile (step 1)
+      if (dice === 6) {
+        const ownOnStart = tokens.some((s, i) => i !== index && s === 1);
+        if (!ownOnStart) validIndices.push(index);
+      }
     } else {
       // Token on track or home corridor
-      if (step + dice <= 57) {
-        validIndices.push(index);
+      const targetStep = step + dice;
+      if (targetStep <= 57) {
+        // Cannot land on your own token unless entering home center (57)
+        const ownOnTarget = (targetStep !== 57) && tokens.some((s, i) => i !== index && s === targetStep);
+        if (!ownOnTarget) validIndices.push(index);
       }
     }
   });
