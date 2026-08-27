@@ -99,7 +99,7 @@ const SoundFX = (function () {
       initCtx();
       playTone(800, 'square', 0.08, 0.2);
       setTimeout(() => playTone(1200, 'triangle', 0.12, 0.2), 60);
-    }
+    },
     playVoiceClip: function (clipPath) {
       if (muted || !clipPath) return;
       try {
