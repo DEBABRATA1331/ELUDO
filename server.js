@@ -17,13 +17,40 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const fs = require('fs');
+
 // Constants & Ludo Rules Data
 const COLORS = ['red', 'green', 'yellow', 'blue'];
 const COLOR_START = { red: 0, green: 13, yellow: 26, blue: 39 };
 const SAFE_TILES = [0, 8, 13, 21, 26, 34, 39, 47];
 
-// In-Memory Room Database
+// Room Database with File Persistence
 const rooms = {};
+const ROOMS_DB_FILE = path.join(__dirname, 'rooms_db.json');
+
+function loadRoomsDB() {
+  try {
+    if (fs.existsSync(ROOMS_DB_FILE)) {
+      const data = fs.readFileSync(ROOMS_DB_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      Object.assign(rooms, parsed);
+      console.log(`[Rooms DB] Loaded ${Object.keys(parsed).length} active room(s) from disk`);
+    }
+  } catch (e) {
+    console.warn('[Rooms DB] Load error:', e.message);
+  }
+}
+
+function saveRoomsDB() {
+  try {
+    fs.writeFileSync(ROOMS_DB_FILE, JSON.stringify(rooms, null, 2));
+  } catch (e) {
+    console.warn('[Rooms DB] Save error:', e.message);
+  }
+}
+
+// Load existing room database at startup
+loadRoomsDB();
 
 // Helper: Webhook Dispatcher
 async function dispatchWebhook(room, eventType, data) {
@@ -346,6 +373,7 @@ io.on('connection', (socket) => {
     }
 
     rooms[code] = room;
+    saveRoomsDB();
     socket.join(code);
 
     socket.emit('room_created', { roomCode: code, playerColor: room.players[0].color, roomState: room });
@@ -400,6 +428,7 @@ io.on('connection', (socket) => {
     };
 
     room.players.push(newPlayer);
+    saveRoomsDB();
     room.logs.push(`${newPlayer.avatar} ${newPlayer.name} joined as ${assignedColor.toUpperCase()}`);
     socket.join(code);
 
