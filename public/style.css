@@ -476,6 +476,13 @@ body {
   100% { transform: scale(1.35) translateY(-4px); }
 }
 
+.token.hopping {
+  transform: scale(1.4) translateY(-10px) !important;
+  z-index: 999 !important;
+  transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.6));
+}
+
 .cell-multi-tokens {
   display: flex;
   flex-wrap: wrap;

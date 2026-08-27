@@ -268,7 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenEl.dataset.index = tokenIndex;
         tokenEl.innerHTML = `<span class="token-num">${tokenIndex + 1}</span>`;
 
-        if (isMyTurn && roomState.hasRolled && roomState.diceValue) {
+        // CRITICAL FIX: Only glow and allow clicks on tokens belonging STRICTLY to playerColor!
+        if (color === playerColor && isMyTurn && roomState.hasRolled && roomState.diceValue) {
           const validMoves = calculateValidMoves(roomState, playerColor, roomState.diceValue);
           if (validMoves.includes(tokenIndex)) {
             tokenEl.classList.add('can-move');
@@ -290,19 +291,49 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    Object.keys(cellTokenMap).forEach(cellId => {
-      const container = document.getElementById(cellId);
-      if (!container) return;
-
-      const tokens = cellTokenMap[cellId];
-      if (tokens.length > 1 && !cellId.startsWith('base_spot_')) {
-        container.classList.add('cell-multi-tokens');
-      } else {
-        container.classList.remove('cell-multi-tokens');
-      }
-
       tokens.forEach(tok => container.appendChild(tok));
     });
+
+    // Step-by-step hopping animation when a token advances
+    if (previousBoardState) {
+      activePlayerColors.forEach(color => {
+        if (!roomState.boardState[color] || !previousBoardState[color]) return;
+        roomState.boardState[color].forEach((newStep, tokenIdx) => {
+          const oldStep = previousBoardState[color][tokenIdx] || 0;
+          if (newStep > oldStep && oldStep > 0) {
+            animateTokenHop(color, tokenIdx, oldStep, newStep);
+          }
+        });
+      });
+    }
+    previousBoardState = JSON.parse(JSON.stringify(roomState.boardState));
+  }
+
+  let previousBoardState = null;
+
+  function animateTokenHop(color, tokenIndex, startStep, endStep) {
+    if (startStep >= endStep) return;
+
+    let currentStep = startStep;
+    const interval = setInterval(() => {
+      currentStep++;
+      const [r, c] = LudoEngine.getTokenCell(color, currentStep, tokenIndex);
+      let targetCell = (currentStep === 0)
+        ? document.getElementById(`base_spot_${color}_${tokenIndex}`)
+        : document.getElementById(`cell_${r}_${c}`);
+
+      const tokenEl = document.querySelector(`.token.${color}[data-index="${tokenIndex}"]`);
+      if (tokenEl && targetCell) {
+        tokenEl.classList.add('hopping');
+        targetCell.appendChild(tokenEl);
+        SoundFX.playStep();
+        setTimeout(() => tokenEl.classList.remove('hopping'), 110);
+      }
+
+      if (currentStep >= endStep) {
+        clearInterval(interval);
+      }
+    }, 150);
   }
 
   function calculateValidMoves(roomState, color, dice) {

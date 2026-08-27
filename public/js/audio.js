@@ -100,6 +100,11 @@ const SoundFX = (function () {
       playTone(800, 'square', 0.08, 0.2);
       setTimeout(() => playTone(1200, 'triangle', 0.12, 0.2), 60);
     },
+    playStep: function () {
+      if (muted) return;
+      initCtx();
+      playTone(480, 'sine', 0.05, 0.15);
+    },
     playVoiceClip: function (clipPath) {
       if (muted || !clipPath) return;
       try {
