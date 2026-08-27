@@ -152,32 +152,96 @@
 
         <div id="chatMessages" class="chat-messages"></div>
         
-        <!-- Quick Taunts & Emoji Shortcuts -->
+        <!-- Quick Taunts with SVG Icons -->
         <div class="quick-taunts-bar">
-          <button type="button" class="taunt-btn" data-msg="Good Luck! 🍀">🍀 Good Luck!</button>
-          <button type="button" class="taunt-btn" data-msg="Hurry Up! ⏰">⏰ Hurry Up!</button>
-          <button type="button" class="taunt-btn" data-msg="Oops! 😅">😅 Oops!</button>
-          <button type="button" class="taunt-btn" data-msg="Nice Move! 🔥">🔥 Nice Move!</button>
-          <button type="button" class="taunt-btn" data-msg="GG WP 🏆">🏆 GG WP</button>
+          <button type="button" class="taunt-btn" data-msg="Good Luck! ⭐">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>Good Luck!</span>
+          </button>
+          <button type="button" class="taunt-btn" data-msg="Hurry Up! ⏰">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Hurry Up!</span>
+          </button>
+          <button type="button" class="taunt-btn" data-msg="Oops! 😅">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Oops!</span>
+          </button>
+          <button type="button" class="taunt-btn" data-msg="Nice Move! 🔥">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>
+            <span>Nice Move!</span>
+          </button>
+          <button type="button" class="taunt-btn" data-msg="GG WP 🏆">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+            <span>GG WP</span>
+          </button>
         </div>
 
-        <!-- FUNNY MEME VOICE PACK SHORTCUTS -->
+        <!-- FUNNY MEME VOICE PACK SHORTCUTS (WITH SVG ICONS & RESPONSIVE GRID) -->
         <div class="voice-pack-header">
-          <span>🎙️ Voice Pack Chat (Tap to Play Voice)</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <span>Voice Pack Reactions</span>
         </div>
-        <div class="quick-taunts-bar voice-taunts-bar">
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Awaz nichy.mp3" data-title="📢 Awaaz Nichy!">📢 Awaaz Nichy!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Ai Baigan.mp3" data-title="🍆 Aaye Baigan!">🍆 Aaye Baigan!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Are kehna kya chahte ho.mp3" data-title="🤔 Kehna Kya Chahte Ho?">🤔 Kehna Kya Chahte Ho?</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Golmaal he bhai sab golmaal hai.mp3" data-title="🌀 Golmaal Hai!">🌀 Golmaal Hai!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_He Prabhu.mp3" data-title="🙏 Hey Prabhu!">🙏 Hey Prabhu!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Paisa hi paisa.mp3" data-title="💰 Paisa Hi Paisa!">💰 Paisa Hi Paisa!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Rahul Gandhi aloo sona machine.mp3" data-title="🥔 Aloo Sona Machine!">🥔 Aloo Sona Machine!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_So Beatiful.mp3" data-title="✨ So Beautiful!">✨ So Beautiful!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_ Uthale re deva uthale re baba.mp3" data-title="📦 Uthale Re Deva!">📦 Uthale Re Deva!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Wah sab ji wah.mp3" data-title="👏 Wah Sahab Ji!">👏 Wah Sahab Ji!</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_WO BULATI HAI MAGAR _ Ft. MODIJI.mp3" data-title="🚨 Wo Bulati Hai Magar...">🚨 Wo Bulati Hai Magar...</button>
-          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Ye baburao ka style hai.mp3" data-title="🕶️ Ye Baburao Ka Style!">🕶️ Ye Baburao Ka Style!</button>
+
+        <div class="voice-grid-container">
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Awaz nichy.mp3" data-title="Awaaz Nichy!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <span>Awaaz Nichy!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Ai Baigan.mp3" data-title="Aaye Baigan!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            <span>Aaye Baigan!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Are kehna kya chahte ho.mp3" data-title="Kehna Kya Chahte Ho?">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Kehna Kya Chahte Ho?</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Golmaal he bhai sab golmaal hai.mp3" data-title="Golmaal Hai!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <span>Golmaal Hai!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_He Prabhu.mp3" data-title="Hey Prabhu!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Hey Prabhu!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Paisa hi paisa.mp3" data-title="Paisa Hi Paisa!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Paisa Hi Paisa!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Rahul Gandhi aloo sona machine.mp3" data-title="Aloo Sona Machine!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Aloo Sona Machine!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_So Beatiful.mp3" data-title="So Beautiful!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span>So Beautiful!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_ Uthale re deva uthale re baba.mp3" data-title="Uthale Re Deva!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span>Uthale Re Deva!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Wah sab ji wah.mp3" data-title="Wah Sahab Ji!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+            <span>Wah Sahab Ji!</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_WO BULATI HAI MAGAR _ Ft. MODIJI.mp3" data-title="Wo Bulati Hai Magar...">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span>Wo Bulati Hai Magar...</span>
+          </button>
+
+          <button type="button" class="voice-btn" data-voice="assets/audio/Voicy_Ye baburao ka style hai.mp3" data-title="Ye Baburao Ka Style!">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
+            <span>Ye Baburao Ka Style!</span>
+          </button>
         </div>
 
         <form id="chatForm" class="chat-form">
