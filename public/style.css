@@ -991,11 +991,13 @@ body {
 /* RESPONSIVE MULTI-COL GRID FOR VOICE PACK CHIPS */
 .voice-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px;
-  max-height: 150px;
+  max-height: 170px;
   overflow-y: auto;
   padding: 4px 2px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .voice-btn {
@@ -1015,6 +1017,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .voice-btn svg {
@@ -1035,6 +1039,30 @@ body {
 .voice-chat-msg {
   border-left: 3px solid var(--comic-yellow);
   background: rgba(250, 204, 21, 0.12);
+}
+
+.chat-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-glass);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: white;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.chat-form button {
+  flex-shrink: 0;
 }
 
 .chat-form {
@@ -1386,8 +1414,63 @@ body, .ludo-board, .token, .dice-cube, .btn {
   .game-container.view-players .sidebar-column .panel-card:nth-child(2) { display: none; }
 
   .game-container.view-chat .board-column { display: none; }
-  .game-container.view-chat .sidebar-column { display: flex; }
+  .game-container.view-chat .sidebar-column { display: flex; width: 100%; }
   .game-container.view-chat .sidebar-column .panel-card:nth-child(1) { display: none; }
+
+  .chat-panel {
+    min-height: calc(100vh - 130px);
+    padding: 10px;
+    box-sizing: border-box;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .chat-messages {
+    height: 180px;
+    max-height: 220px;
+    min-height: 120px;
+  }
+
+  .quick-taunts-bar {
+    flex-wrap: wrap;
+    max-height: 80px;
+    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .voice-grid-container {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 5px;
+    max-height: 180px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .voice-btn {
+    padding: 5px 6px;
+    font-size: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chat-form {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chat-form input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chat-form button {
+    flex-shrink: 0;
+    padding: 8px 12px;
+  }
 
   .modal-box {
     padding: 16px;
