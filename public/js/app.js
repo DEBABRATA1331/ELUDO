@@ -244,7 +244,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const isMyTurn = (currentPlayer && currentPlayer.color === playerColor && roomState.gameStarted);
     const cellTokenMap = {};
 
-    Object.keys(roomState.boardState).forEach(color => {
+    // ONLY render tokens for colors of PLAYERS WHO ACTUALLY JOINED THE MATCH!
+    const activePlayerColors = roomState.players.map(p => p.color);
+
+    activePlayerColors.forEach(color => {
+      if (!roomState.boardState[color]) return;
+
       roomState.boardState[color].forEach((step, tokenIndex) => {
         const [r, c] = LudoEngine.getTokenCell(color, step, tokenIndex);
 
@@ -353,14 +358,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nameEl) nameEl.innerText = p.name;
         if (avatarEl) {
           avatarEl.src = (p.avatar && p.avatar.includes('/')) ? p.avatar : 'assets/avatars/avatar1.png';
+          avatarEl.style.display = 'inline-block';
         }
         if (badgeEl) {
+          badgeEl.style.opacity = '1';
           const isTurn = roomState.gameStarted && roomState.players[roomState.currentTurnIndex]?.color === color;
           badgeEl.classList.toggle('active-turn-yard', isTurn);
         }
       } else {
-        if (nameEl) nameEl.innerText = color.toUpperCase();
-        if (badgeEl) badgeEl.classList.remove('active-turn-yard');
+        if (nameEl) nameEl.innerText = 'OPEN';
+        if (avatarEl) avatarEl.style.display = 'none';
+        if (badgeEl) {
+          badgeEl.style.opacity = '0.35';
+          badgeEl.classList.remove('active-turn-yard');
+        }
       }
     });
 
@@ -411,6 +422,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const me = roomState.players.find(p => p.socketId === socket?.id || p.id === 'p1');
     const amIHost = me ? me.isHost : false;
     const amICoHost = me ? me.isCoHost : false;
+
+    // Prominent Match Mode Banner (e.g. 👥 2-Player Match)
+    const matchHeader = document.createElement('div');
+    matchHeader.className = 'match-mode-header';
+    matchHeader.innerHTML = `
+      <div class="match-mode-badge">
+        <span>👥 ${roomState.players.length}-PLAYER MATCH MODE</span>
+        ${!roomState.gameStarted ? `<small>(Only these ${roomState.players.length} joined player(s) will play)</small>` : `<small class="live-hint">🟢 MATCH IN PROGRESS</small>`}
+      </div>
+    `;
+    playersList.appendChild(matchHeader);
 
     roomState.players.forEach(p => {
       const card = document.createElement('div');
