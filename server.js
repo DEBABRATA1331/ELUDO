@@ -729,7 +729,7 @@ io.on('connection', (socket) => {
   });
 
   // 10. Chat Message
-  socket.on('send_chat', ({ roomCode, message }) => {
+  socket.on('send_chat', ({ roomCode, message, voiceUrl }) => {
     const room = rooms[roomCode];
     if (!room) return;
     const player = room.players.find(p => p.socketId === socket.id);
@@ -738,6 +738,7 @@ io.on('connection', (socket) => {
         sender: player.name,
         color: player.color,
         text: message.trim().substring(0, 150),
+        voiceUrl: voiceUrl || null,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       io.to(roomCode).emit('chat_message', chatItem);

@@ -6,6 +6,7 @@
 const SoundFX = (function () {
   let audioCtx = null;
   let muted = false;
+  let currentVoiceAudio = null;
 
   function initCtx() {
     if (!audioCtx) {
@@ -98,6 +99,20 @@ const SoundFX = (function () {
       initCtx();
       playTone(800, 'square', 0.08, 0.2);
       setTimeout(() => playTone(1200, 'triangle', 0.12, 0.2), 60);
+    }
+    playVoiceClip: function (clipPath) {
+      if (muted || !clipPath) return;
+      try {
+        if (currentVoiceAudio) {
+          currentVoiceAudio.pause();
+          currentVoiceAudio.currentTime = 0;
+        }
+        currentVoiceAudio = new Audio(encodeURI(clipPath));
+        currentVoiceAudio.volume = 0.95;
+        currentVoiceAudio.play().catch(e => console.warn('Audio play error', e));
+      } catch (e) {
+        console.warn('Voice play error', e);
+      }
     }
   };
 })();

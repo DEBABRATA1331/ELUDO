@@ -728,8 +728,36 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       SoundFX.playClick();
       const msg = btn.dataset.msg;
-      if (msg && myRoomCode && socket && !isOfflineMode) {
+      if (isOfflineMode) {
+        showFloatingBoardBubble({ sender: 'You', color: myColor || 'red', text: msg });
+        const msgEl = document.createElement('div');
+        msgEl.className = 'chat-msg';
+        msgEl.innerHTML = `<span class="sender" style="color: var(--color-${myColor || 'red'})">You:</span> <span>${msg}</span>`;
+        chatMessages.appendChild(msgEl);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else if (msg && myRoomCode && socket) {
         socket.emit('send_chat', { roomCode: myRoomCode, message: msg });
+      }
+    });
+  });
+
+  // Meme Voice Pack Click Listeners
+  document.querySelectorAll('.voice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      SoundFX.playClick();
+      const title = btn.dataset.title;
+      const voiceUrl = btn.dataset.voice;
+
+      if (isOfflineMode) {
+        SoundFX.playVoiceClip(voiceUrl);
+        showFloatingBoardBubble({ sender: 'You', color: myColor || 'red', text: title });
+        const msgEl = document.createElement('div');
+        msgEl.className = 'chat-msg voice-chat-msg';
+        msgEl.innerHTML = `<span class="sender" style="color: var(--color-${myColor || 'red'})">You:</span> <span>${title} 🔊</span>`;
+        chatMessages.appendChild(msgEl);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else if (socket && myRoomCode) {
+        socket.emit('send_chat', { roomCode: myRoomCode, message: title, voiceUrl });
       }
     });
   });
@@ -988,13 +1016,16 @@ document.addEventListener('DOMContentLoaded', () => {
       webhookTestBadge.classList.remove('hidden');
     });
 
-    socket.on('chat_message', ({ sender, color, text }) => {
+    socket.on('chat_message', ({ sender, color, text, voiceUrl }) => {
       const msgEl = document.createElement('div');
-      msgEl.className = 'chat-msg';
-      msgEl.innerHTML = `<span class="sender" style="color: var(--color-${color})">${sender}:</span> <span>${text}</span>`;
+      msgEl.className = `chat-msg ${voiceUrl ? 'voice-chat-msg' : ''}`;
+      msgEl.innerHTML = `<span class="sender" style="color: var(--color-${color})">${sender}:</span> <span>${text} ${voiceUrl ? '🔊' : ''}</span>`;
       chatMessages.appendChild(msgEl);
       chatMessages.scrollTop = chatMessages.scrollHeight;
 
+      if (voiceUrl) {
+        SoundFX.playVoiceClip(voiceUrl);
+      }
       showFloatingBoardBubble({ sender, color, text });
     });
 
