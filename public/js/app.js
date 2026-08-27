@@ -310,15 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const valid = [];
     tokens.forEach((step, idx) => {
       if (step === 57) return;
-      if (step === 0 && dice === 6) {
-        const ownOnStart = tokens.some((s, i) => i !== idx && s === 1);
-        if (!ownOnStart) valid.push(idx);
-      } else if (step > 0) {
-        const targetStep = step + dice;
-        if (targetStep <= 57) {
-          const ownOnTarget = (targetStep !== 57) && tokens.some((s, i) => i !== idx && s === targetStep);
-          if (!ownOnTarget) valid.push(idx);
-        }
+      if (step === 0) {
+        if (dice === 6) valid.push(idx);
+      } else {
+        if (step + dice <= 57) valid.push(idx);
       }
     });
     return valid;

@@ -121,18 +121,10 @@ function getValidMoves(room, color, dice) {
     if (step === 57) return; // Already in Home center
     if (step === 0) {
       // Token in base requires 6 to enter start tile (step 1)
-      if (dice === 6) {
-        const ownOnStart = tokens.some((s, i) => i !== index && s === 1);
-        if (!ownOnStart) validIndices.push(index);
-      }
+      if (dice === 6) validIndices.push(index);
     } else {
       // Token on track or home corridor
-      const targetStep = step + dice;
-      if (targetStep <= 57) {
-        // Cannot land on your own token unless entering home center (57)
-        const ownOnTarget = (targetStep !== 57) && tokens.some((s, i) => i !== index && s === targetStep);
-        if (!ownOnTarget) validIndices.push(index);
-      }
+      if (step + dice <= 57) validIndices.push(index);
     }
   });
 
@@ -180,7 +172,7 @@ function createRoomState(code, hostName, webhookUrl = '', avatar = 'assets/avata
   };
 }
 
-// Advance turn to next active color
+// Advance turn to next active color (skipping finished players and inactive seats)
 function advanceTurn(room, extraTurn = false) {
   if (extraTurn && !room.winners.includes(room.players[room.currentTurnIndex]?.color)) {
     room.hasRolled = false;
@@ -192,15 +184,19 @@ function advanceTurn(room, extraTurn = false) {
   room.hasRolled = false;
   room.diceValue = null;
 
-  let nextIndex = (room.currentTurnIndex + 1) % room.players.length;
+  const total = room.players.length;
+  let nextIndex = (room.currentTurnIndex + 1) % total;
   let attempts = 0;
-  // Skip players who have already finished all tokens
-  while (room.winners.includes(room.players[nextIndex]?.color) && attempts < room.players.length) {
-    nextIndex = (nextIndex + 1) % room.players.length;
+
+  while (attempts < total) {
+    const p = room.players[nextIndex];
+    if (p && !room.winners.includes(p.color)) {
+      room.currentTurnIndex = nextIndex;
+      break;
+    }
+    nextIndex = (nextIndex + 1) % total;
     attempts++;
   }
-
-  room.currentTurnIndex = nextIndex;
 
   // Auto-play for Bot turn
   const currentPlayer = room.players[room.currentTurnIndex];
@@ -300,20 +296,19 @@ function executeMove(room, color, tokenIndex, dice) {
   room.boardState[color][tokenIndex] = newStep;
   const player = room.players.find(p => p.color === color);
   let grantExtraTurn = (dice === 6);
-  let capturedToken = false;
 
   // Check if token reached Home Center (57)
   if (newStep === 57) {
     grantExtraTurn = true;
-    room.logs.push(`🎉 ${player.name} (${color.toUpperCase()}) reached HOME with token #${tokenIndex + 1}!`);
-    dispatchWebhook(room, 'TOKEN_HOME', { player: player.name, color, tokenIndex });
+    room.logs.push(`🎉 ${player ? player.name : color.toUpperCase()} reached HOME with token #${tokenIndex + 1}!`);
+    dispatchWebhook(room, 'TOKEN_HOME', { player: player ? player.name : color, color, tokenIndex });
 
     // Check if player won
     const allHome = room.boardState[color].every(s => s === 57);
     if (allHome && !room.winners.includes(color)) {
       room.winners.push(color);
-      room.logs.push(`🏆 ${player.name} (${color.toUpperCase()}) finished in place #${room.winners.length}!`);
-      dispatchWebhook(room, 'MATCH_VICTORY', { player: player.name, color, rank: room.winners.length });
+      room.logs.push(`🏆 ${player ? player.name : color.toUpperCase()} finished in place #${room.winners.length}!`);
+      dispatchWebhook(room, 'MATCH_VICTORY', { player: player ? player.name : color, color, rank: room.winners.length });
     }
   }
 
@@ -325,13 +320,12 @@ function executeMove(room, color, tokenIndex, dice) {
       room.boardState[oppPlayer.color].forEach((oppStep, oppIndex) => {
         const oppGlobal = getGlobalTrackIndex(oppPlayer.color, oppStep);
         if (oppGlobal !== null && oppGlobal === newGlobalTrack) {
-          // CAPTURE!
-          room.boardState[oppPlayer.color][oppIndex] = 0; // Send back to base
-          capturedToken = true;
+          // CAPTURE! Send opponent token back to step 0 (Base Yard)
+          room.boardState[oppPlayer.color][oppIndex] = 0;
           grantExtraTurn = true;
-          room.logs.push(`⚔️ ${player.name} (${color.toUpperCase()}) captured ${oppPlayer.name}'s token!`);
+          room.logs.push(`⚔️ ${player ? player.name : color.toUpperCase()} captured ${oppPlayer.name}'s token!`);
           dispatchWebhook(room, 'TOKEN_CAPTURED', {
-            attacker: player.name,
+            attacker: player ? player.name : color,
             victim: oppPlayer.name,
             victimColor: oppPlayer.color
           });
@@ -347,14 +341,16 @@ function executeMove(room, color, tokenIndex, dice) {
     room.logs.push(`🏁 MATCH FINISHED! Winner: ${winnerPlayer ? winnerPlayer.name : room.winners[0]}`);
   }
 
+  saveRoomsDB();
   advanceTurn(room, grantExtraTurn);
   io.to(room.code).emit('game_state_update', room);
 }
 
-// Helper to find available unassigned colors
+// Helper to find available unassigned colors (2-Player default: RED vs YELLOW opposite seats)
 function getAvailableColor(room) {
   const taken = room.players.map(p => p.color);
-  return COLORS.find(c => !taken.includes(c)) || 'red';
+  const SEAT_ORDER = ['red', 'yellow', 'green', 'blue'];
+  return SEAT_ORDER.find(c => !taken.includes(c)) || 'red';
 }
 
 // Socket.io Connection Logic
